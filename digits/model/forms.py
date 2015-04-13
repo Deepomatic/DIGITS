@@ -6,7 +6,7 @@ from google.protobuf import text_format
 from flask.ext.wtf import Form
 import wtforms
 from wtforms import validators
-from caffe.proto import caffe_pb2
+#from caffe.proto import caffe_pb2
 
 from digits import utils
 

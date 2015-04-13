@@ -11,6 +11,7 @@ from digits.webapp import app, scheduler
 from digits.dataset import tasks
 from forms import ImageClassificationDatasetForm
 from job import ImageClassificationDatasetJob
+from torch_tools import *
 
 NAMESPACE = '/datasets/images/classification'
 
@@ -71,48 +72,54 @@ def from_folders(job, form):
     ### Add CreateDbTasks
 
     encode = form.encode_images.data
+    caffe_dataset = form.caffe.data 
+    torch_dataset = form.torch.data
 
-    job.tasks.append(
-            tasks.CreateDbTask(
-                job_dir     = job.dir(),
-                parents     = parse_train_task,
-                input_file  = utils.constants.TRAIN_FILE,
-                db_name     = utils.constants.TRAIN_DB,
-                image_dims  = job.image_dims,
-                resize_mode = job.resize_mode,
-                encode      = encode,
-                mean_file   = utils.constants.MEAN_FILE_CAFFE,
-                labels_file = job.labels_file,
-                )
-            )
-
-    if percent_val > 0 or form.has_val_folder.data:
+    if caffe_dataset:
         job.tasks.append(
                 tasks.CreateDbTask(
                     job_dir     = job.dir(),
-                    parents     = val_parents,
-                    input_file  = utils.constants.VAL_FILE,
-                    db_name     = utils.constants.VAL_DB,
+                    parents     = parse_train_task,
+                    input_file  = utils.constants.TRAIN_FILE,
+                    db_name     = utils.constants.TRAIN_DB,
                     image_dims  = job.image_dims,
                     resize_mode = job.resize_mode,
                     encode      = encode,
+                    mean_file   = utils.constants.MEAN_FILE_CAFFE,
                     labels_file = job.labels_file,
                     )
                 )
 
-    if percent_test > 0 or form.has_test_folder.data:
-        job.tasks.append(
-                tasks.CreateDbTask(
-                    job_dir     = job.dir(),
-                    parents     = test_parents,
-                    input_file  = utils.constants.TEST_FILE,
-                    db_name     = utils.constants.TEST_DB,
-                    image_dims  = job.image_dims,
-                    resize_mode = job.resize_mode,
-                    encode      = encode,
-                    labels_file = job.labels_file,
+        if percent_val > 0 or form.has_val_folder.data:
+            job.tasks.append(
+                    tasks.CreateDbTask(
+                        job_dir     = job.dir(),
+                        parents     = val_parents,
+                        input_file  = utils.constants.VAL_FILE,
+                        db_name     = utils.constants.VAL_DB,
+                        image_dims  = job.image_dims,
+                        resize_mode = job.resize_mode,
+                        encode      = encode,
+                        labels_file = job.labels_file,
+                        )
                     )
-                )
+
+        if percent_test > 0 or form.has_test_folder.data:
+            job.tasks.append(
+                    tasks.CreateDbTask(
+                        job_dir     = job.dir(),
+                        parents     = test_parents,
+                        input_file  = utils.constants.TEST_FILE,
+                        db_name     = utils.constants.TEST_DB,
+                        image_dims  = job.image_dims,
+                        resize_mode = job.resize_mode,
+                        encode      = encode,
+                        labels_file = job.labels_file,
+                        )
+                    )
+    if torch_dataset:
+        generate_dataset(job.dir(), form.folder_train.data, form.folder_pct_val.data)
+
 
 def from_files(job, form):
     """

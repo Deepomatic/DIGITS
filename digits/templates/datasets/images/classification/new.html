@@ -51,10 +51,21 @@ New Image Classification Dataset
             </div>
             <div class="row">
                 <div class="form-group{{ ' has-error' if form.encode_images.errors else '' }}">
+                    <ul>
+                        <li><label for="{{form.caffe.name}}">
+                            {{form.caffe}}
+                            {{form.caffe.label.text}}
+                        </label></li>
+                        <li><label for="{{form.torch.name}}">
+                            {{form.torch}}
+                            {{form.torch.label.text}}
+                        </label></li>
+                    </ul>
                     <label for="{{form.encode_images.name}}">
                         {{form.encode_images}}
                         {{form.encode_images.label.text}}
                     </label>
+
                     <span name="encode_images_explanation"
                         class="explanation-tooltip glyphicon glyphicon-question-sign"
                         data-container="body"

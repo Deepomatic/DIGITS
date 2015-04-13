@@ -15,6 +15,15 @@ class ImageDatasetForm(DatasetForm):
             default=True
             )
 
+    torch = wtforms.BooleanField('Torch dataset',
+            default=True
+            )
+
+    caffe = wtforms.BooleanField('Caffe dataset',
+            default=False
+            )
+
+
     ### Image resize
 
     resize_channels = wtforms.SelectField(u'Image type',

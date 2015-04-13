@@ -10,8 +10,8 @@ import zipfile
 
 from google.protobuf import text_format
 from flask import render_template, request, redirect, url_for, flash, make_response, abort, jsonify
-from caffe.proto import caffe_pb2
-import caffe.draw
+#from caffe.proto import caffe_pb2
+#import caffe.draw
 
 import digits
 from digits import utils
@@ -102,12 +102,12 @@ def models_customize():
 @app.route(NAMESPACE + 'visualize-network', methods=['POST'])
 def models_visualize_network():
     """Returns a string of png data"""
-    net = caffe_pb2.NetParameter()
+   # net = caffe_pb2.NetParameter()
     text_format.Merge(request.form['custom_network'], net)
     # Throws an error if name is None
     if not net.name:
         net.name = 'Network'
-    return '<image src="data:image/png;base64,' + caffe.draw.draw_net(net, 'UD').encode('base64') + '" style="max-width:100%" />'
+   # return '<image src="data:image/png;base64,' + caffe.draw.draw_net(net, 'UD').encode('base64') + '" style="max-width:100%" />'
 
 @app.route(NAMESPACE + 'visualize-lr', methods=['POST'])
 def models_visualize_lr():

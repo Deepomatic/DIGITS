@@ -14,6 +14,13 @@ from status import Status
 import dataset.views
 import model.views
 
+
+### TORCH ###
+@app.route("/torch")
+def switch_to_torch():
+    session['lib'] = "torch"
+    return home()
+
 @app.route('/')
 def home():
     new_dataset_options = [

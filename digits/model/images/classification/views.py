@@ -10,7 +10,7 @@ import random
 import numpy as np
 from flask import render_template, request, redirect, url_for, flash
 from google.protobuf import text_format
-from caffe.proto import caffe_pb2
+#from caffe.proto import caffe_pb2
 
 import digits
 from digits.config import config_option

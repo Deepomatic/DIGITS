@@ -1,7 +1,7 @@
 # Copyright (c) 2014-2015, NVIDIA CORPORATION.  All rights reserved.
 
 from digits.job import Job
-from . import tasks
+#from . import caffe_tasks
 
 # NOTE: Increment this everytime the pickled object changes
 PICKLE_VERSION = 1

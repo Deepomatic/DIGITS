@@ -324,7 +324,7 @@ class DigitsConfig:
         self.log_file = self.get_log_file(level)
 
         self.option_list = [
-                CaffeRootOption(level),
+                #CaffeRootOption(level),
                 GpusOption(level),
                 JobsDirOption(level),
                 LogLevelOption(level),
