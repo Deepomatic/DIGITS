@@ -95,6 +95,21 @@ $("#dataset").change(function() {
                 </div>
             </div>
         </div>
+        <div class="col-sm-4 well">
+            <h4>Library</h4>
+              <ul>
+                <li>
+                    <label for="{{form.caffe.name}}">
+                    {{form.caffe}}
+                    {{form.caffe.label.text}}
+                    </label></li>
+                    <li><label for="{{form.torch.name}}">
+                    {{form.torch}}
+                    {{form.torch.label.text}}
+                    </label>
+                </li>
+            </ul>
+        </div>
     </div>
 
     <hr>

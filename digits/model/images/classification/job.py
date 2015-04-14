@@ -50,4 +50,3 @@ class ImageClassificationModelJob(ImageModelJob):
                 (snapshot_filename,
                     os.path.basename(snapshot_filename)),
                 ]
-

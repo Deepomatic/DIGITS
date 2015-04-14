@@ -52,102 +52,163 @@ def image_classification_model_create():
     datasetJob = scheduler.get_job(form.dataset.data)
     if not datasetJob:
         return 'Unknown dataset job_id "%s"' % form.dataset.data, 500
-
     job = None
-    try:
-        job = ImageClassificationModelJob(
-                name        = form.model_name.data,
-                dataset_id  = datasetJob.id(),
-                )
 
-        network = caffe_pb2.NetParameter()
-        pretrained_model = None
-        if form.method.data == 'standard':
-            found = False
-            networks_dir = os.path.join(os.path.dirname(digits.__file__), 'standard-networks')
-            for filename in os.listdir(networks_dir):
-                path = os.path.join(networks_dir, filename)
-                if os.path.isfile(path):
-                    match = re.match(r'%s.prototxt' % form.standard_networks.data, filename)
-                    if match:
-                        with open(path) as infile:
-                            text_format.Merge(infile.read(), network)
-                        found = True
-                        break
-            if not found:
-                raise Exception('Unknown standard model "%s"' % form.standard_networks.data)
-        elif form.method.data == 'previous':
-            old_job = scheduler.get_job(form.previous_networks.data)
-            if not old_job:
-                raise Exception('Job not found: %s' % form.previous_networks.data)
-            network.CopyFrom(old_job.train_task().network)
-            for i, choice in enumerate(form.previous_networks.choices):
-                if choice[0] == form.previous_networks.data:
-                    epoch = int(request.form['%s-snapshot' % form.previous_networks.data])
-                    if epoch != 0:
-                        for filename, e in old_job.train_task().snapshots:
-                            if e == epoch:
-                                pretrained_model = filename
-                                break
-
-                        if pretrained_model is None:
-                            raise Exception("For the job %s, selected pretrained_model for epoch %d is invalid!" % (form.previous_networks.data, epoch))
-                        if not (os.path.exists(pretrained_model)):
-                            raise Exception("Pretrained_model for the selected epoch doesn't exists. May be deleted by another user/process. Please restart the server to load the correct pretrained_model details")
-                    break
-
-        elif form.method.data == 'custom':
-            text_format.Merge(form.custom_network.data, network)
-            pretrained_model = form.custom_network_snapshot.data.strip()
-        else:
-            raise Exception('Unrecognized method: "%s"' % form.method.data)
-
-        policy = {'policy': form.lr_policy.data}
-        if form.lr_policy.data == 'fixed':
-            pass
-        elif form.lr_policy.data == 'step':
-            policy['stepsize'] = form.lr_step_size.data
-            policy['gamma'] = form.lr_step_gamma.data
-        elif form.lr_policy.data == 'multistep':
-            policy['stepvalue'] = form.lr_multistep_values.data
-            policy['gamma'] = form.lr_multistep_gamma.data
-        elif form.lr_policy.data == 'exp':
-            policy['gamma'] = form.lr_exp_gamma.data
-        elif form.lr_policy.data == 'inv':
-            policy['gamma'] = form.lr_inv_gamma.data
-            policy['power'] = form.lr_inv_power.data
-        elif form.lr_policy.data == 'poly':
-            policy['power'] = form.lr_poly_power.data
-        elif form.lr_policy.data == 'sigmoid':
-            policy['stepsize'] = form.lr_sigmoid_step.data
-            policy['gamma'] = form.lr_sigmoid_gamma.data
-        else:
-            return 'Invalid policy', 404
-
-        job.tasks.append(
-                tasks.CaffeTrainTask(
-                    job_dir         = job.dir(),
-                    dataset         = datasetJob,
-                    train_epochs    = form.train_epochs.data,
-                    snapshot_interval   = form.snapshot_interval.data,
-                    learning_rate   = form.learning_rate.data,
-                    lr_policy       = policy,
-                    batch_size      = form.batch_size.data,
-                    val_interval    = form.val_interval.data,
-                    pretrained_model    = pretrained_model,
-                    crop_size       = form.crop_size.data,
-                    use_mean        = form.use_mean.data,
-                    network         = network,
+    if form.caffe.data:
+        try:
+            job = ImageClassificationModelJob(
+                    name        = form.model_name.data,
+                    dataset_id  = datasetJob.id(),
                     )
-                )
 
-        scheduler.add_job(job)
-        return redirect(url_for('models_show', job_id=job.id()))
+            network = caffe_pb2.NetParameter()
+            pretrained_model = None
+            if form.method.data == 'standard':
+                found = False
+                networks_dir = os.path.join(os.path.dirname(digits.__file__), 'standard-networks')
+                for filename in os.listdir(networks_dir):
+                    path = os.path.join(networks_dir, filename)
+                    if os.path.isfile(path):
+                        match = re.match(r'%s.prototxt' % form.standard_networks.data, filename)
+                        if match:
+                            with open(path) as infile:
+                                text_format.Merge(infile.read(), network)
+                            found = True
+                            break
+                if not found:
+                    raise Exception('Unknown standard model "%s"' % form.standard_networks.data)
+            elif form.method.data == 'previous':
+                old_job = scheduler.get_job(form.previous_networks.data)
+                if not old_job:
+                    raise Exception('Job not found: %s' % form.previous_networks.data)
+                network.CopyFrom(old_job.train_task().network)
+                for i, choice in enumerate(form.previous_networks.choices):
+                    if choice[0] == form.previous_networks.data:
+                        epoch = int(request.form['%s-snapshot' % form.previous_networks.data])
+                        if epoch != 0:
+                            for filename, e in old_job.train_task().snapshots:
+                                if e == epoch:
+                                    pretrained_model = filename
+                                    break
 
-    except:
-        if job:
-            scheduler.delete_job(job)
-        raise
+                            if pretrained_model is None:
+                                raise Exception("For the job %s, selected pretrained_model for epoch %d is invalid!" % (form.previous_networks.data, epoch))
+                            if not (os.path.exists(pretrained_model)):
+                                raise Exception("Pretrained_model for the selected epoch doesn't exists. May be deleted by another user/process. Please restart the server to load the correct pretrained_model details")
+                        break
+
+            elif form.method.data == 'custom':
+                text_format.Merge(form.custom_network.data, network)
+                pretrained_model = form.custom_network_snapshot.data.strip()
+            else:
+                raise Exception('Unrecognized method: "%s"' % form.method.data)
+
+            policy = {'policy': form.lr_policy.data}
+            if form.lr_policy.data == 'fixed':
+                pass
+            elif form.lr_policy.data == 'step':
+                policy['stepsize'] = form.lr_step_size.data
+                policy['gamma'] = form.lr_step_gamma.data
+            elif form.lr_policy.data == 'multistep':
+                policy['stepvalue'] = form.lr_multistep_values.data
+                policy['gamma'] = form.lr_multistep_gamma.data
+            elif form.lr_policy.data == 'exp':
+                policy['gamma'] = form.lr_exp_gamma.data
+            elif form.lr_policy.data == 'inv':
+                policy['gamma'] = form.lr_inv_gamma.data
+                policy['power'] = form.lr_inv_power.data
+            elif form.lr_policy.data == 'poly':
+                policy['power'] = form.lr_poly_power.data
+            elif form.lr_policy.data == 'sigmoid':
+                policy['stepsize'] = form.lr_sigmoid_step.data
+                policy['gamma'] = form.lr_sigmoid_gamma.data
+            else:
+                return 'Invalid policy', 404
+
+            job.tasks.append(
+                    tasks.CaffeTrainTask(
+                        job_dir         = job.dir(),
+                        dataset         = datasetJob,
+                        train_epochs    = form.train_epochs.data,
+                        snapshot_interval   = form.snapshot_interval.data,
+                        learning_rate   = form.learning_rate.data,
+                        lr_policy       = policy,
+                        batch_size      = form.batch_size.data,
+                        val_interval    = form.val_interval.data,
+                        pretrained_model    = pretrained_model,
+                        crop_size       = form.crop_size.data,
+                        use_mean        = form.use_mean.data,
+                        network         = network,
+                        )
+                    )
+
+            scheduler.add_job(job)
+            return redirect(url_for('models_show', job_id=job.id()))
+
+        except:
+            if job:
+                scheduler.delete_job(job)
+            raise
+    else:
+        job = ImageClassificationModelJob(
+        name        = form.model_name.data,
+        dataset_id  = datasetJob.id(),)
+
+        try:
+            pretrained_model = None
+            if form.method.data == 'custom':
+                print form.custom_network.data
+                #text_format.Merge(form.custom_network.data, network)
+                #pretrained_model = form.custom_network_snapshot.data.strip()
+            else:
+                raise Exception('Unrecognized method: "%s"' % form.method.data)
+
+            policy = {'policy': form.lr_policy.data}
+            if form.lr_policy.data == 'fixed':
+                pass
+            elif form.lr_policy.data == 'step':
+                policy['stepsize'] = form.lr_step_size.data
+                policy['gamma'] = form.lr_step_gamma.data
+            elif form.lr_policy.data == 'multistep':
+                policy['stepvalue'] = form.lr_multistep_values.data
+                policy['gamma'] = form.lr_multistep_gamma.data
+            elif form.lr_policy.data == 'exp':
+                policy['gamma'] = form.lr_exp_gamma.data
+            elif form.lr_policy.data == 'inv':
+                policy['gamma'] = form.lr_inv_gamma.data
+                policy['power'] = form.lr_inv_power.data
+            elif form.lr_policy.data == 'poly':
+                policy['power'] = form.lr_poly_power.data
+            elif form.lr_policy.data == 'sigmoid':
+                policy['stepsize'] = form.lr_sigmoid_step.data
+                policy['gamma'] = form.lr_sigmoid_gamma.data
+            else:
+                return 'Invalid policy', 404
+
+            # job.tasks.append(
+            #         tasks.CaffeTrainTask(
+            #             job_dir         = job.dir(),
+            #             dataset         = datasetJob,
+            #             train_epochs    = form.train_epochs.data,
+            #             snapshot_interval   = form.snapshot_interval.data,
+            #             learning_rate   = form.learning_rate.data,
+            #             lr_policy       = policy,
+            #             batch_size      = form.batch_size.data,
+            #             val_interval    = form.val_interval.data,
+            #             pretrained_model    = pretrained_model,
+            #             crop_size       = form.crop_size.data,
+            #             use_mean        = form.use_mean.data,
+            #             network         = network,
+            #             )
+            #         )
+
+            scheduler.add_job(job)
+            return redirect(url_for('models_show', job_id=job.id()))
+
+        except:
+            if job:
+                scheduler.delete_job(job)
+            raise
 
 def show(job):
     """

@@ -137,6 +137,16 @@ class ModelForm(Form):
 
     ### Network
 
+    torch = wtforms.BooleanField('Torch dataset',
+            default=True
+            )
+
+    caffe = wtforms.BooleanField('Caffe dataset',
+            default=False
+            )
+
+
+
     method = wtforms.HiddenField('Model type',
             validators = [
                 validators.AnyOf(
