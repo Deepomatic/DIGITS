@@ -275,9 +275,27 @@ updateSnapshotList({% autoescape false %}{{task.snapshot_list()}}{% endautoescap
                             formaction="{{url_for('models_download', job_id=job.id())}}"
                             formmethod="post"
                             formenctype="multipart/form-data"
-                            class="btn btn-info">
+                            class="btn btn-primary">
                             Download
                         </button>
+
+                        <!-- Display the confusion matrix -->
+                        <button
+                            formaction="{{url_for('image_classification_analysis_create', job_id=job.id())}}"
+                            formmethod="post"
+                            formenctype="multipart/form-data"
+                            class="btn btn-info">
+                            Display average accuracy
+                        </button>
+
+                    </div>
+                </div> 
+                <hr/>
+                <!-- Test interface -->
+                <div class="row">
+                    <div class="col-sm-12">
+                        <h3>Test the model on one or many images</h3>
+                        <br/>
                     </div>
                 </div>
                 <div class="row">

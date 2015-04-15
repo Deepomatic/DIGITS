@@ -1,0 +1,85 @@
+{# Copyright (c) 2014-2015, Deepomatic SAS.  All rights reserved. #}
+
+{% extends "job.html" %}
+
+
+{% macro print_job_information() %}
+<div class="panel-heading">
+    <h4>Job Information</h4>
+</div>
+<div class="panel-body">
+    <dl>
+        <dt>Job Directory</dt>
+        <dd>{{ job.dir() }}</dd>
+    </dl>
+</div>
+{% endmacro %}
+
+{% macro print_parse_folder_task(task) %}
+<div class="panel-heading">
+    <h4>{{task.name()}}</h4>
+</div>
+<div class="panel-body">
+    <dl>
+        <dt>Folder</dt>
+        <dd>{{task.folder}}</dd>
+    </dl>
+ </div>
+{% endmacro %}
+ 
+{% block job_content %} 
+
+<script>
+function drawAverageAccuracyGraph(data) {
+    $(".avgacc-graph").show();
+    c3.generate($.extend({
+        bindto: '.avgacc-graph',
+        size: {height: 300},
+        axis: {
+            x: {
+                label: {
+                    text: 'Threshold',
+                    position: 'outer-center',
+                },
+                tick: {
+                    // 3 sig-digs
+                    format: function(x) { return Math.round(x*1000)/1000; },
+                    fit: false,
+                },
+                min: 0,
+                padding: {left: 0},
+            },
+            y: {
+                label: {
+                    text: 'Accuracy',
+                    position: 'outer-middle',
+                },
+                min: 0,
+                padding: {bottom: 0},
+            },
+        },
+        grid: {x: {show: true} },
+        legend: {show: false},
+    },
+    {data: data}
+    ));
+}
+
+</script>
+
+
+
+  {{ job._name}}
+
+
+<div class="avgacc-graph" style="height:300px;width:100%;background:white;display:none;"></div>
+{% set avg_accuracy_graph_data = job.accuracy_task().avg_accuracy_graph_data() %}
+{% if avg_accuracy_graph_data %}
+<script>
+    drawAverageAccuracyGraph({% autoescape false %}{{avg_accuracy_graph_data}}{% endautoescape %});
+</script>
+{% endif %}
+
+
+{% endblock %}
+

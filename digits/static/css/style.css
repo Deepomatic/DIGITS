@@ -19,3 +19,9 @@ div.progress div.progress-bar {
 path.c3-line {
     stroke-width: 2px;
 }
+
+hr {
+	border-color: #999;
+}
+
+

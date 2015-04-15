@@ -56,6 +56,8 @@ class TrainTask(Task):
         self.train_outputs = OrderedDict()
         self.val_outputs = OrderedDict()
 
+        # Storing average accuracy
+
     def __getstate__(self):
         state = super(TrainTask, self).__getstate__()
         if 'dataset' in state:
@@ -286,6 +288,8 @@ class TrainTask(Task):
         Run inference on many inputs
         """
         return None
+ 
+
 
     def get_labels(self):
         """
@@ -418,6 +422,52 @@ class TrainTask(Task):
             return None
         else:
             return data
+
+    def average_accuracy_graph_data(self, model_epoch=None):
+        """
+        Returns average accuracy data formatted for a C3.js graph
+        """
+        data = {
+                'columns': [],
+                'xs': {},
+                'names': {},
+                }
+
+        print model_epoch
+        if self.train_outputs and 'epoch' in self.train_outputs:
+            added_column = False
+            # print self.train_outputs
+            stride = max(len(self.train_outputs['epoch'].data)/100,1)
+            for name, output in self.train_outputs.iteritems():
+                if name not in ['epoch', 'learning_rate']:
+                    if output.kind == 'Accuracy':
+                        col_id = '%s-train' % name
+                        data['columns'].append([col_id] + [100*x for x in output.data[::stride]])
+                        data['xs'][col_id] = 'train_epochs'
+                        data['names'][col_id] = '%s (train)' % name
+                        added_column = True
+            if added_column:
+                data['columns'].append(['train_epochs'] + self.train_outputs['epoch'].data[::stride])
+
+        if self.val_outputs and 'epoch' in self.val_outputs:
+            added_column = False
+            stride = max(len(self.val_outputs['epoch'].data)/100,1)
+            for name, output in self.val_outputs.iteritems():
+                if name not in ['epoch']:
+                    if output.kind == 'Accuracy':
+                        col_id = '%s-val' % name
+                        data['columns'].append([col_id] + [100*x for x in output.data[::stride]])
+                        data['xs'][col_id] = 'val_epochs'
+                        data['names'][col_id] = '%s (val)' % name
+                        added_column = True
+            if added_column:
+                data['columns'].append(['val_epochs'] + self.val_outputs['epoch'].data[::stride])
+
+        if not len(data['columns']):
+            return None
+        else:
+            return data
+
 
     def combined_graph_data(self):
         """

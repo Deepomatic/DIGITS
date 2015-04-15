@@ -7,12 +7,13 @@ import traceback
 from flask import render_template, flash, redirect, session, url_for, abort, make_response, request, jsonify
 from flask.ext.socketio import emit, join_room, leave_room
 
-from . import dataset, model
+from . import dataset, model, analysis
 from config import config_option
 from webapp import app, socketio, scheduler
 from status import Status
 import dataset.views
 import model.views
+import analysis.views
 
 @app.route('/')
 def home():
@@ -34,6 +35,15 @@ def home():
                     },
                 ])
             ]
+    new_analysis_options = [
+            ('Images', [
+                {
+                    'title': 'Classification',
+                    'id': 'image-classification',
+                    'url': url_for('image_classification_analysis_new'),
+                    },
+                ])
+            ]
     return render_template('home.html',
             new_dataset_options = new_dataset_options,
             running_datasets    = get_job_list(dataset.DatasetJob, True),
@@ -41,6 +51,9 @@ def home():
             new_model_options   = new_model_options,
             running_models      = get_job_list(model.ModelJob, True),
             completed_models    = get_job_list(model.ModelJob, False),
+            new_analysis_options  = new_analysis_options,
+            running_analysis      = get_job_list(analysis.AnalysisJob, True),
+            completed_analysis    = get_job_list(analysis.AnalysisJob, False),
             )
 
 @app.route('/index.json')
@@ -57,9 +70,16 @@ def home_json():
         'id': j.id(),
         'status': j.status.name,
         } for j in models]
+    analysis = get_job_list(analysis.AnalysisJob, True) + get_job_list(analysis.AnalysisJob, False)
+    analysis = [{
+        'name': j.name(),
+        'id': j.id(),
+        'status': j.status.name,
+        } for j in analysis]
     return jsonify({
         'datasets': datasets,
         'models': models,
+        'analysis': analysis,
         })
 
 def get_job_list(cls, running):
@@ -83,6 +103,8 @@ def show_job(job_id):
         return redirect(url_for('datasets_show', job_id=job_id))
     if isinstance(job, model.ModelJob):
         return redirect(url_for('models_show', job_id=job_id))
+    if isinstance(job, analysis.AnalysisJob):
+        return redirect(url_for('analysis_show', job_id=job_id))
     else:
         abort(404)
 
@@ -98,6 +120,7 @@ def edit_job(job_id):
     return 'Changed job name from "%s" to "%s"' % (old_name, job.name())
 
 @app.route('/datasets/<job_id>/status', methods=['GET'])
+@app.route('/analysis/<job_id>/status', methods=['GET'])
 @app.route('/models/<job_id>/status', methods=['GET'])
 @app.route('/jobs/<job_id>/status', methods=['GET'])
 def job_status(job_id):
@@ -113,6 +136,7 @@ def job_status(job_id):
     return json.dumps(result)
 
 @app.route('/datasets/<job_id>', methods=['DELETE'])
+@app.route('/analysis/<job_id>', methods=['DELETE'])
 @app.route('/models/<job_id>', methods=['DELETE'])
 @app.route('/jobs/<job_id>', methods=['DELETE'])
 def delete_job(job_id):
@@ -125,6 +149,7 @@ def delete_job(job_id):
         return 'Job could not deleted!', 403
 
 @app.route('/datasets/<job_id>/abort', methods=['POST'])
+@app.route('/analysis/<job_id>/abort', methods=['POST'])
 @app.route('/models/<job_id>/abort', methods=['POST'])
 @app.route('/jobs/<job_id>/abort', methods=['POST'])
 def abort_job(job_id):

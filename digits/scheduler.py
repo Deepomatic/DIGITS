@@ -15,6 +15,7 @@ from . import utils
 from status import Status
 from job import Job
 from dataset import DatasetJob, tasks as dataset_tasks
+from analysis import AnalysisJob, tasks as analysis_tasks
 from model import ModelJob, tasks as model_tasks
 
 from log import logger
@@ -54,6 +55,7 @@ class Scheduler:
         self.split_queue = gevent.queue.Queue()
         self.create_queue = gevent.queue.Queue()
         self.train_queue = gevent.queue.Queue()
+        self.accuracy_queue = gevent.queue.Queue()
 
         self.running = False
         self.shutdown = gevent.event.Event()
@@ -243,6 +245,14 @@ class Scheduler:
             for x in xrange(1): # Only start 1 thread if running in CPU mode
                 gevent.spawn(self.task_thread, self.train_queue)
 
+        if len(self.gpu_list):
+            for x in xrange(1):
+                gevent.spawn(self.task_thread, self.accuracy_queue)
+        else: 
+            for x in xrange(1):
+                gevent.spawn(self.task_thread, self.accuracy_queue)
+
+
         self.running = True
         return True
 
@@ -296,7 +306,7 @@ class Scheduler:
                                 job.abort()
                         else:
                             job.status = Status.RUN
-
+                    #TODO: make the AnalysisJob wait its ModelJob
                     if job.status == Status.RUN:
                         alldone = True
                         for task in job.tasks:
@@ -311,7 +321,10 @@ class Scheduler:
                                         self.create_queue.put( (job, task) )
                                     elif isinstance(task, model_tasks.TrainTask):
                                         self.train_queue.put( (job, task) )
+                                    elif isinstance(task, analysis_tasks.AccuracyTask):
+                                        self.accuracy_queue.put( (job, task) )
                                     else:
+                                        print type(task).__name__
                                         logger.error('Task type %s not recognized' % type(task).__name__, job_id=job.id())
                                         task.exception = Exception('Task type not recognized')
                                         task.status = Status.ERROR

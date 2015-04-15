@@ -64,6 +64,8 @@ socket.on('task update', function (msg) {
         }
         else if (msg['update'] == 'snapshots') {
             updateSnapshotList(msg['data']);
+        } else if (msg['update'] == 'avg_accuracy') {
+            drawAverageAccuracyGraph(msg['data']);
         }
     });
         </script>

@@ -271,6 +271,7 @@ def image_classification_model_test_many():
             results=results,
             )
 
+
 def get_datasets():
     return [(j.id(), j.name()) for j in sorted(
         [j for j in scheduler.jobs if isinstance(j, ImageClassificationDatasetJob) and (j.status.is_running() or j.status == Status.DONE)],

@@ -44,6 +44,11 @@ class ModelJob(Job):
         """Return the first TrainTask for this job"""
         return [t for t in self.tasks if isinstance(t, tasks.TrainTask)][0]
 
+
+    def accuracy_task(self):
+        """Return the first Accuracy Task for this job"""
+        return [t for t in self.tasks if isinstance(t, tasks.AccuracyTask)][0]
+
     def download_files(self):
         """
         Returns a list of tuples: [(path, filename)...]
