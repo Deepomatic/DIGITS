@@ -23,7 +23,7 @@ import lmdb
 from cStringIO import StringIO
 # must import digits.config before caffe to set the path
 import caffe.io
-from caffe.proto import caffe_pb2
+#from caffe.proto import caffe_pb2
 
 logger = logging.getLogger('digits.tools.create_db')
 

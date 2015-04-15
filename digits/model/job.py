@@ -42,7 +42,8 @@ class ModelJob(Job):
 
     def train_task(self):
         """Return the first TrainTask for this job"""
-        return [t for t in self.tasks if isinstance(t, tasks.TrainTask)][0]
+        #return [t for t in self.tasks if isinstance(t, tasks.TrainTask)][0]
+        return self.tasks[0]
 
     def download_files(self):
         """

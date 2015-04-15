@@ -9,7 +9,7 @@ import subprocess
 
 import numpy as np
 from google.protobuf import text_format
-from caffe.proto import caffe_pb2
+#from caffe.proto import caffe_pb2
 
 from train import TrainTask
 from digits.config import config_option

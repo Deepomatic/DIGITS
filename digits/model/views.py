@@ -43,7 +43,6 @@ def models_show(job_id):
 
     if job is None:
         abort(404)
-
     if isinstance(job, model_images.ImageClassificationModelJob):
         return model_images.classification.views.show(job)
     else:

@@ -123,11 +123,9 @@ class TrainTask(Task):
 
         if not self.save_output(self.train_outputs, *args):
             return
-
         if self.last_train_update and (time.time() - self.last_train_update) < 5:
             return
         self.last_train_update = time.time()
-
         self.logger.debug('Training %s%% complete.' % round(100 * self.current_epoch/self.train_epochs,2))
 
         # loss graph data
@@ -192,7 +190,7 @@ class TrainTask(Task):
         # don't let them be unicode
         name = str(name)
         kind = str(kind)
-
+        print name, kind, value
         # update d['epoch']
         if 'epoch' not in d:
             d['epoch'] = NetworkOutput('Epoch', [self.current_epoch])
@@ -438,6 +436,7 @@ class TrainTask(Task):
                     col_id = '%s-train' % name
                     data['xs'][col_id] = 'train_epochs'
                     data['names'][col_id] = '%s (train)' % name
+                    print output.data[::stride]
                     if 'accuracy' in output.kind.lower():
                         data['columns'].append([col_id] + [100*x for x in output.data[::stride]])
                         data['axes'][col_id] = 'y2'

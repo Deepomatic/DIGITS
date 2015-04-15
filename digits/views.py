@@ -143,19 +143,19 @@ def abort_job(job_id):
 
 ### Error handling
 
-@app.errorhandler(Exception)
-def handle_exception(e, status_code=500):
-    title = type(e).__name__
-    message = str(e)
-    trace = None
-    if app.debug:
-        trace = traceback.format_exc()
-        #trace = '<br>\n'.join(trace.split('\n'))
-    return render_template('500.html',
-            title   = title,
-            message = message,
-            trace   = trace,
-            ), status_code
+# @app.errorhandler(Exception)
+# def handle_exception(e, status_code=500):
+#     title = type(e).__name__
+#     message = str(e)
+#     trace = None
+#     if app.debug:
+#         trace = traceback.format_exc()
+#         #trace = '<br>\n'.join(trace.split('\n'))
+#     return render_template('500.html',
+#             title   = title,
+#             message = message,
+#             trace   = trace,
+#             ), status_code
 
 ### File serving
 

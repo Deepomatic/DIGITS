@@ -35,11 +35,12 @@ class ModelForm(Form):
         return _required
 
     def validate_NetParameter(form, field):
-        pb = caffe_pb2.NetParameter()
-        try:
-            text_format.Merge(field.data, pb)
-        except text_format.ParseError as e:
-            raise validators.ValidationError('Not a valid NetParameter: %s' % e)
+        pass
+        # pb = caffe_pb2.NetParameter()
+        # try:
+        #     text_format.Merge(field.data, pb)
+        # except text_format.ParseError as e:
+        #     raise validators.ValidationError('Not a valid NetParameter: %s' % e)
 
     ### Fields
 

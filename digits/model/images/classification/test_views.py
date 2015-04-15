@@ -8,7 +8,7 @@ import unittest
 import mock
 from flask import url_for
 from bs4 import BeautifulSoup
-from caffe.proto import caffe_pb2
+#from caffe.proto import caffe_pb2
 
 from . import views as _
 import digits

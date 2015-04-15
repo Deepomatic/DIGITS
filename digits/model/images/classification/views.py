@@ -45,16 +45,15 @@ def image_classification_model_create():
     form.previous_networks.choices = get_previous_networks()
 
     prev_network_snapshots = get_previous_network_snapshots()
-
     if not form.validate_on_submit():
         return render_template('models/images/classification/new.html', form=form, previous_network_snapshots=prev_network_snapshots), 400
-
     datasetJob = scheduler.get_job(form.dataset.data)
     if not datasetJob:
         return 'Unknown dataset job_id "%s"' % form.dataset.data, 500
     job = None
 
     if form.caffe.data:
+        print "caffe model"
         try:
             job = ImageClassificationModelJob(
                     name        = form.model_name.data,
@@ -150,6 +149,7 @@ def image_classification_model_create():
                 scheduler.delete_job(job)
             raise
     else:
+        print "torch model"
         job = ImageClassificationModelJob(
         name        = form.model_name.data,
         dataset_id  = datasetJob.id(),)
@@ -184,30 +184,31 @@ def image_classification_model_create():
                 policy['gamma'] = form.lr_sigmoid_gamma.data
             else:
                 return 'Invalid policy', 404
-
-            # job.tasks.append(
-            #         tasks.CaffeTrainTask(
-            #             job_dir         = job.dir(),
-            #             dataset         = datasetJob,
-            #             train_epochs    = form.train_epochs.data,
-            #             snapshot_interval   = form.snapshot_interval.data,
-            #             learning_rate   = form.learning_rate.data,
-            #             lr_policy       = policy,
-            #             batch_size      = form.batch_size.data,
-            #             val_interval    = form.val_interval.data,
-            #             pretrained_model    = pretrained_model,
-            #             crop_size       = form.crop_size.data,
-            #             use_mean        = form.use_mean.data,
-            #             network         = network,
-            #             )
-            #         )
+            network = form.custom_network.data #HACK
+            print network, tasks
+            job.tasks.append(
+                    tasks.TorchTrainTask(
+                        job_dir         = job.dir(),
+                        dataset         = datasetJob,
+                        train_epochs    = form.train_epochs.data,
+                        snapshot_interval   = form.snapshot_interval.data,
+                        learning_rate   = form.learning_rate.data,
+                        lr_policy       = policy,
+                        batch_size      = form.batch_size.data,
+                        val_interval    = form.val_interval.data,
+                        pretrained_model    = pretrained_model,
+                        crop_size       = form.crop_size.data,
+                        use_mean        = form.use_mean.data,
+                        network         = network,
+                        )
+                    )
 
             scheduler.add_job(job)
             return redirect(url_for('models_show', job_id=job.id()))
 
         except:
             if job:
-                scheduler.delete_job(job)
+               scheduler.delete_job(job)
             raise
 
 def show(job):

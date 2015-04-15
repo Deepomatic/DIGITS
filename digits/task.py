@@ -236,6 +236,7 @@ class Task(StatusCls):
         # NOTE: This must change when the logging format changes
         # YYYY-MM-DD HH:MM:SS [LEVEL] message
         match = re.match(r'(\S{10} \S{8}) \[(\w+)\s*\] (.*)$', line)
+        torch_match = re.match
         if match:
             timestr = match.group(1)
             timestamp = time.mktime(time.strptime(timestr, digits.log.DATE_FORMAT))
@@ -253,7 +254,7 @@ class Task(StatusCls):
                 level = 'critical'
             return (timestamp, level, message)
         else:
-            return (None, None, None)
+           return (None, None, None)
 
 
     def process_output(self, line):
