@@ -150,7 +150,7 @@ class CaffeAccuracyTask(AccuracyTask):
             self.prediction_data = self.probas_data.argmax(axis=1)
 
             avg_accuracy = self.avg_accuracy_graph_data()
-            confusion_matrix = self.confusion_matrix_graph_data()
+            confusion_matrix = self.confusion_matrix_data()
             socketio.emit('task update',
                     {
                         'task': self.html_id(),
