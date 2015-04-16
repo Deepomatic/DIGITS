@@ -31,7 +31,7 @@ class TorchTrainTask(TrainTask):
         #TODO
         pass
 
-    def __init__(self, network, **kwargs):
+    def __init__(self, network, job_path, **kwargs):
         """
         Arguments:
         network -- a NetParameter defining the network
@@ -42,18 +42,22 @@ class TorchTrainTask(TrainTask):
         #self.network = network
 
         self.current_iteration = 0
+        self.last_pop = -1
         self.root = kwargs['dataset'].dir()
         self.loaded_snapshot_file = None
         self.loaded_snapshot_epoch = None
         self.image_mean = None
         self.classifier = None
         self.solver = None
+        self.network = network
 
         self.solver_file = constants.CAFFE_SOLVER_FILE
         self.train_val_file = constants.CAFFE_TRAIN_VAL_FILE
         self.snapshot_prefix = constants.CAFFE_SNAPSHOT_PREFIX
         self.deploy_file = constants.CAFFE_DEPLOY_FILE
         self.args = kwargs
+        self.path = job_path
+
 
     def __getstate__(self):
         state = super(TorchTrainTask, self).__getstate__()
@@ -88,12 +92,13 @@ class TorchTrainTask(TrainTask):
         """
         self.current_iteration += 1
 
-      #  if self.current_iteration == it:
-      #      return
+        # if self.current_iteration <= self.pop:
+        #     return
 
-      # self.current_iteration = it
-        if self.current_iteration % 15:
-            self.send_progress_update(self.current_iteration)
+        # # self.current_iteration = it
+        # self.pop = self.current_iteration + 100
+        # self.send_progress_update(self.pop/100)
+        self.send_progress_update(self.current_iteration)
 
     ### Task overrides
 
@@ -103,9 +108,8 @@ class TorchTrainTask(TrainTask):
         args = []
         args += ["-data", self.root]
         args += ["-LR", str(self.args['learning_rate'])]
-        args += ["-cache", self.root]
-
-
+        args += ["-cache", self.path]
+        #args += ["-model", self.network]
 
         # if config_option('caffe_root') == 'SYS':
         #     caffe_bin = 'caffe'
@@ -121,7 +125,7 @@ class TorchTrainTask(TrainTask):
         #     args.append('--gpu=%d' % gpu_id)
         # if self.pretrained_model:
         #     args.append('--weights=%s' % self.path(self.pretrained_model))
-        print "th /home/alexis/DIGITS/imagenet/main.lua -nGPU 3 -backend cudnn -netType alexnet".split() + args
+        print " ".join("th /home/alexis/DIGITS/imagenet/main.lua -nGPU 3 -backend cudnn -netType alexnet".split() + args)
         return "th /home/alexis/DIGITS/imagenet/main.lua -nGPU 3 -backend cudnn -netType alexnet".split() + args
 
 
@@ -166,6 +170,7 @@ class TorchTrainTask(TrainTask):
     @override
     def process_output(self, line):
         match = re.search("(\S{10} \S{8}) Epoch (\d+) Accuracy top1-%: (\d+\.?\d+).*Loss: (\d+\.?\d+).*", str(line.strip()))
+        print line, match
         if not match:
            return True
         #return (None, None, None)

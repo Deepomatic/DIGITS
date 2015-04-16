@@ -305,9 +305,9 @@ class Scheduler:
                                 if task.ready_to_queue():
                                     logger.debug('%s task queued.' % task.name(), job_id=job.id())
                                     task.status = Status.WAIT
-                                    if isinstance(task, dataset_tasks.ParseFolderTask):
+                                    if isinstance(task, dataset_tasks.ParseFolderTask) or isinstance(task, dataset_tasks.SplitFolderTask):
                                         self.split_queue.put( (job, task) )
-                                    elif isinstance(task, dataset_tasks.CreateDbTask):
+                                    elif isinstance(task, dataset_tasks.CreateDbTask) or isinstance(task, dataset_tasks.CreateDbTorsh):
                                         self.create_queue.put( (job, task) )
                                     elif isinstance(task, model_tasks.TrainTask):
                                         self.train_queue.put( (job, task) )

@@ -10,7 +10,6 @@ import random
 import numpy as np
 from flask import render_template, request, redirect, url_for, flash
 from google.protobuf import text_format
-#from caffe.proto import caffe_pb2
 
 import digits
 from digits.config import config_option
@@ -53,7 +52,7 @@ def image_classification_model_create():
     job = None
 
     if form.caffe.data:
-        print "caffe model"
+        from caffe.proto import caffe_pb2
         try:
             job = ImageClassificationModelJob(
                     name        = form.model_name.data,
@@ -153,11 +152,14 @@ def image_classification_model_create():
         job = ImageClassificationModelJob(
         name        = form.model_name.data,
         dataset_id  = datasetJob.id(),)
+        model_path = "{}/_{}.lua".format(job._dir, form.model_name.data)
+        with open(model_path, 'w') as f:
+            f.write(form.custom_network.data)
 
         try:
             pretrained_model = None
             if form.method.data == 'custom':
-                print form.custom_network.data
+                pass
                 #text_format.Merge(form.custom_network.data, network)
                 #pretrained_model = form.custom_network_snapshot.data.strip()
             else:
@@ -185,7 +187,6 @@ def image_classification_model_create():
             else:
                 return 'Invalid policy', 404
             network = form.custom_network.data #HACK
-            print network, tasks
             job.tasks.append(
                     tasks.TorchTrainTask(
                         job_dir         = job.dir(),
@@ -199,7 +200,8 @@ def image_classification_model_create():
                         pretrained_model    = pretrained_model,
                         crop_size       = form.crop_size.data,
                         use_mean        = form.use_mean.data,
-                        network         = network,
+                        network         = model_path,
+                        job_path        = job._dir
                         )
                     )
 
