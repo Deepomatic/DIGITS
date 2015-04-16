@@ -49,7 +49,7 @@ def image_classification_analysis_create():
 
 
         job = ImageClassificationAnalysisJob( 
-            name=modelJob._name+"-analysis",
+            name=modelJob._name+"-accuracy-analysis",
             modeljob_id= modelJob.id(),
             model_epoch= epoch
             )
@@ -76,5 +76,4 @@ def show(job):
     """
     Called from digits.analysis.views.analysis_show()
     """
-    print "BLABLA"
     return render_template('analysis/images/classification/show.html', job=job)

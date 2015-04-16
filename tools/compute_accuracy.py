@@ -63,7 +63,6 @@ def compute_accuracy(snapshot, deploy_file, labels_file, mean_file, val_file):
                        raw_scale=255)
 
     size = len(val_matrix)
-    size = 100
     num_classes = np.array(val_matrix[1])[-1]+1
     prediction = np.zeros(size, dtype=int)
     labels = np.zeros(size, dtype=int)
@@ -75,7 +74,7 @@ def compute_accuracy(snapshot, deploy_file, labels_file, mean_file, val_file):
         labels[i] = val_matrix[1][i]
         probas[i] = net.predict([input_image], oversample=False)
         prediction[i] = probas[i].argmax()
-        if i % (size/100) == 0:
+        if i % (size/500) == 0:
             logger.debug("Progress: %0.2f" % (i/float(size)))
 
     snapshot_file, snapshot_extension = os.path.splitext(snapshot)

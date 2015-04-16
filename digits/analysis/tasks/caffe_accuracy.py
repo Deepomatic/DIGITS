@@ -122,13 +122,11 @@ class CaffeAccuracyTask(AccuracyTask):
         if not message:
             return False
 
-        print message
 
         # progress
         match = re.match(r'Progress: ([-+]?[0-9]*\.?[0-9]+(e[-+]?[0-9]+)?)', message)
         if match:
             self.progress = float(match.group(1))
-            print self.progress
             socketio.emit('task update',
                     {
                         'task': self.html_id(),
@@ -145,21 +143,20 @@ class CaffeAccuracyTask(AccuracyTask):
         match = re.match(r'Done', message)
         if match:
             # Store the accuracy data
-            print "Done ! Loading datas..."
             snapshot_file, snapshot_extension = os.path.splitext(self.snapshot)
 
             self.probas_data = joblib.load(snapshot_file + "-accuracy-proba.pkl")
             self.labels_data = joblib.load(snapshot_file + "-accuracy-labels.pkl")
-            print self.probas_data.shape
             self.prediction_data = self.probas_data.argmax(axis=1)
-            print self.prediction_data.shape
 
             avg_accuracy = self.avg_accuracy_graph_data()
+            confusion_matrix = self.confusion_matrix_graph_data()
             socketio.emit('task update',
                     {
                         'task': self.html_id(),
-                        'update': 'avg_accuracy',
-                        'data': avg_accuracy
+                        'update': 'accuracy_data',
+                        'avg_accuracy': avg_accuracy,
+                        'confusion_matrix': confusion_matrix,
                         },
                     namespace='/jobs',
                     room=self.job_id,

@@ -30,55 +30,84 @@
 {% block job_content %} 
 
 <script>
+function drawConfusionMatrix(data) {
+    $(".confusion-matrix").show();
+
+    $('.confusion-matrix').empty();
+    $('.confusion-matrix').append(data["results"]);
+}
+
 function drawAverageAccuracyGraph(data) {
     $(".avgacc-graph").show();
-    c3.generate($.extend({
-        bindto: '.avgacc-graph',
-        size: {height: 300},
-        axis: {
-            x: {
-                label: {
-                    text: 'Threshold',
-                    position: 'outer-center',
+
+    c3.generate({
+        "bindto": '.avgacc-graph',
+        "data": data, 
+        "axis": {
+            "x": {
+                "show": true,
+                "tick": {
+                    format: function (x) { return  x.toFixed(2); }
                 },
-                tick: {
-                    // 3 sig-digs
-                    format: function(x) { return Math.round(x*1000)/1000; },
-                    fit: false,
-                },
-                min: 0,
-                padding: {left: 0},
+                "label": {
+                    "text": "Confidence threshold",
+                    "position": "outer-left"
+                }
+
             },
-            y: {
-                label: {
-                    text: 'Accuracy',
-                    position: 'outer-middle',
+            "y": {
+                "show": true,
+                "label": { 
+                  "text": 'Accuracy (%)',
+                  "position": 'outer-middle'
                 },
-                min: 0,
-                padding: {bottom: 0},
+                "tick": {
+                    format: function (x) { return  100*x.toFixed(2); }
+                },
+
             },
-        },
-        grid: {x: {show: true} },
-        legend: {show: false},
-    },
-    {data: data}
-    ));
+            "y2": {
+                "show": true,
+                "label": { 
+                  "text": 'Percentage of answer (%)',
+                  "position": 'outer-middle'
+                },
+                "tick": {
+                    format: function (x) { return  100*x.toFixed(2); }
+                },
+            }
+        }
+     });
+ 
 }
 
 </script>
+ 
 
-
-
-  {{ job._name}}
-
+<h2>Average accuracy</h2>
 
 <div class="avgacc-graph" style="height:300px;width:100%;background:white;display:none;"></div>
+<h2>Confusion matrix</h2>
+
+
+<pre class="confusion-matrix" style="display:none;"></pre>
 {% set avg_accuracy_graph_data = job.accuracy_task().avg_accuracy_graph_data() %}
+{% set confusion_matrix_data = job.accuracy_task().confusion_matrix_data() %}
 {% if avg_accuracy_graph_data %}
 <script>
     drawAverageAccuracyGraph({% autoescape false %}{{avg_accuracy_graph_data}}{% endautoescape %});
 </script>
 {% endif %}
+
+
+
+
+{% if confusion_matrix_data %}
+<script>
+    drawConfusionMatrix({% autoescape false %}{{confusion_matrix_data}}{% endautoescape %});
+</script>
+{% endif %}
+
 
 
 {% endblock %}
