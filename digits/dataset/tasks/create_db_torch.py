@@ -53,14 +53,12 @@ class CreateDbTorsh(Task):
         self.distribution = None
 
     def __getstate__(self):
-        print "la"
         d = super(CreateDbTorsh, self).__getstate__()
         if 'labels' in d:
             del d['labels']
         return d
 
     def __setstate__(self, state):
-        print "Setstate"
         super(CreateDbTorsh, self).__setstate__(state)
 
     @override
@@ -87,26 +85,9 @@ class CreateDbTorsh(Task):
 
     @override
     def task_arguments(self, **kwargs):
-        # args = [sys.executable, os.path.join(os.path.dirname(os.path.dirname(digits.__file__)), 'tools', 'create_db.py'),
-        #         self.path(self.input_file),
-        #         self.path(self.db_name),
-        #         self.image_dims[1],
-        #         self.image_dims[0],
-        #         '--channels=%s' % self.image_dims[2],
-        #         '--resize_mode=%s' % self.resize_mode,
-        #         ]
-
-        # if self.mean_file is not None:
-        #     args.append('--mean_file=%s' % self.path(self.mean_file))
-        #     # Add a visual mean_file
-        #     args.append('--mean_file=%s' % self.path(utils.constants.MEAN_FILE_IMAGE))
-        # if self.image_folder:
-        #     args.append('--image_folder=%s' % self.image_folder)
-        # if self.encode:
-        #     args.append('--encode')
-        args= "th /home/alexis/DIGITS/imagenet/generate_db.lua -data {0} -LR 0.01 -cache {1} -name {2} -size {3}".format(self.path, self.path, self.db_name, self.image_dims[0])
-        print args
-        return args.split()
+        args = ["th", os.path.join(os.path.dirname(os.path.dirname(digits.__file__)), 'fbcunn', 'generate_db.lua')]
+        args += "-data {0} -LR 0.01 -cache {1} -name {2} -size {3}".format(self.path, self.path, self.db_name, self.image_dims[0]).split()
+        return args
 
     @override
     def process_output(self, line):
@@ -127,12 +108,6 @@ class CreateDbTorsh(Task):
                     )
             return True
 
-        # result
-        # match = re.match(r'Total images added: (\d+)', message)
-        # if match:
-        #     self.entries_count = int(match.group(1))
-        #     self.logger.debug(message)
-        #     return True
 
         return True
 

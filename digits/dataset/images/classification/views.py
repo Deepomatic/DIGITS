@@ -2,6 +2,7 @@
 
 import os
 import shutil
+import re
 
 from flask import render_template, request, redirect, url_for, flash
 
@@ -131,7 +132,7 @@ def from_folders(job, form):
                         job_dir     = job.dir(),
                         parents     = split_folder_task,
                         input_file  = utils.constants.TEST_FILE,
-                        db_name     = utils.constants.TEST_DB,
+                        db_name     = re.sub('[^0-9a-zA-Z]+', '-', form.dataset_name.data),
                         image_dims  = job.image_dims,
                         resize_mode = job.resize_mode,
                         encode      = encode,
