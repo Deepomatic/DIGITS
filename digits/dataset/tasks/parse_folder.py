@@ -238,11 +238,11 @@ class SplitFolderTask(Task):
 
 
     def __getstate__(self):
-        state = super(ParseFolderTask, self).__getstate__()
+        state = super(SplitFolderTask, self).__getstate__()
         return state
 
     def __setstate__(self, state):
-        super(ParseFolderTask, self).__setstate__(state)
+        super(SplitFolderTask, self).__setstate__(state)
 
     @override
     def name(self):

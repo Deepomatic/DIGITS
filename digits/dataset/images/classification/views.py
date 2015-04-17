@@ -117,6 +117,7 @@ def from_folders(job, form):
                         labels_file = job.labels_file,
                         )
                     )
+
     if torch_dataset:
         split_folder_task = tasks.SplitFolderTask(
             job_dir         = job.dir(),
@@ -125,6 +126,7 @@ def from_folders(job, form):
             percent_test    = percent_test,
             )
         job.tasks.append(split_folder_task)
+        
         job.tasks.append(tasks.CreateDbTorsh(
                         job_dir     = job.dir(),
                         parents     = split_folder_task,
@@ -136,9 +138,6 @@ def from_folders(job, form):
                         labels_file = job.labels_file,
                         )
                     )
-
-        #generate_dataset(job.dir(), form.folder_train.data, form.folder_pct_val.data)
-
 
 def from_files(job, form):
     """

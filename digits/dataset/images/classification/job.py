@@ -1,5 +1,6 @@
 # Copyright (c) 2014-2015, NVIDIA CORPORATION.  All rights reserved.
 
+import pickle
 import os.path
 
 from digits.dataset import tasks
@@ -44,7 +45,6 @@ class ImageClassificationDatasetJob(ImageDatasetJob):
         max_per_category -- maximum images per category
         """
         assert len(self.tasks) == 0
-
         self.labels_file = utils.constants.LABELS_FILE
 
         ### Add ParseFolderTask
@@ -143,4 +143,3 @@ class ImageClassificationDatasetJob(ImageDatasetJob):
                         labels_file = self.labels_file,
                         )
                     )
-
