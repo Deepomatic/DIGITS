@@ -25,8 +25,8 @@ if not os.execute('cd ' .. opt.data) then
     error(("could not chdir to '%s'"):format(opt.data))
 end
 
-local loadSize   = {3, opt.size, opt.size}
-local sampleSize = {3, opt.size, opt.size}
+local loadSize   = {3, 256, 256}
+local sampleSize = {3, 224, 224}
 
 -- channel-wise mean and std. Calculate or load them from disk later in the script.
 local mean,std
@@ -42,9 +42,9 @@ local trainHook = function(self, path)
    -- find the smaller dimension, and resize it to 256 (while keeping aspect ratio)
    local iW, iH = input:size()
    if iW < iH then
-      input:size(self.loadSize[3], self.loadSize[3] * iH / iW);
+      input:size(256, 256 * iH / iW);
    else
-      input:size(self.loadSize[3] * iW / iH, self.loadSize[3]);
+      input:size(256 * iW / iH, 256);
    end
    iW, iH = input:size();
    -- do random crop
@@ -74,8 +74,8 @@ else
    print('Creating train metadata')
    trainLoader = dataLoader{
       paths = {paths.concat(opt.data, 'train')},
-      loadSize = {3, opt.size, opt.size},
-      sampleSize = {3, opt.size, opt.size},
+      loadSize = {3, 256, 256},
+      sampleSize = {3, 224, 224},
       split = 100,
       verbose = true
    }
@@ -110,9 +110,9 @@ local testHook = function(self, path)
    -- find the smaller dimension, and resize it to 256 (while keeping aspect ratio)
    local iW, iH = input:size()
    if iW < iH then
-      input:size(self.loadSize[3], self.loadSize[3] * iH / iW);
+      input:size(256, 256 * iH / iW);
    else
-      input:size(self.loadSize[3] * iW / iH, self.loadSize[3]);
+      input:size(256 * iW / iH, 256);
    end
    iW, iH = input:size();
    local im = input:toTensor('float','RGB','DHW')
@@ -174,7 +174,6 @@ else
    print('Estimating the mean (per-channel, shared for all pixels) over ' .. nSamples .. ' randomly sampled training images')
    local meanEstimate = {0,0,0}
    for i=1,nSamples do
-      print ("estimation:", tostring(i), tostring(nSamples*2))
       local img = trainLoader:sample(1)
       for j=1,3 do
          meanEstimate[j] = meanEstimate[j] + img[j]:mean()
@@ -188,7 +187,6 @@ else
    print('Estimating the std (per-channel, shared for all pixels) over ' .. nSamples .. ' randomly sampled training images')
    local stdEstimate = {0,0,0}
    for i=1,nSamples do
-      print ("estimation:", tostring(i + nSamples), tostring(nSamples*2))
       local img = trainLoader:sample(1)
       for j=1,3 do
          stdEstimate[j] = stdEstimate[j] + img[j]:std()

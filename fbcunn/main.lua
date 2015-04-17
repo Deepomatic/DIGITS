@@ -13,7 +13,7 @@ require 'xlua'
 require 'optim'
 
 local opts = paths.dofile('opts.lua')
-print(arg)
+
 opt = opts.parse(arg)
 print(opt)
 

@@ -20,8 +20,7 @@ require 'optim'
 -- 1.1. Create Network
 local config = opt.netType .. '_' .. opt.backend
 paths.dofile('models/' .. config .. '.lua')
-path = opt.model
-print('=> Creating model from file: ' .. path)
+print('=> Creating model from file: models/' .. config .. '.lua')
 model = createModel(opt.nGPU) -- for the model creation code, check the models/ folder
 
 -- 2. Create Criterion

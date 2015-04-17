@@ -8,6 +8,7 @@ import subprocess
 
 import numpy as np
 
+import digits
 from train import TrainTask
 from digits.config import config_option
 from digits.status import Status
@@ -48,7 +49,7 @@ class TorchTrainTask(TrainTask):
         self.loaded_snapshot_epoch = None
         self.image_mean = None
         self.classifier = None
-        self.solver = None
+        self.max_iter = 55*10000
         self.network = network
 
         self.solver_file = constants.CAFFE_SOLVER_FILE
@@ -105,28 +106,16 @@ class TorchTrainTask(TrainTask):
     @override
     def task_arguments(self, **kwargs):
         gpu_id = kwargs.pop('gpu_id', None)
-        args = []
+        args = ["th", os.path.join(os.path.dirname(os.path.dirname(digits.__file__)), 'fbcunn', 'main.lua')]
         args += ["-data", self.root]
         args += ["-LR", str(self.args['learning_rate'])]
         args += ["-cache", self.path]
-        #args += ["-model", self.network]
+        args += ["-nGPU", "1"]
+        args += ["-backend", "cudnn"]
+        args += ["-netType", "alexnet"] #mettre le nom du reseau
 
-        # if config_option('caffe_root') == 'SYS':
-        #     caffe_bin = 'caffe'
-        # else:
-        #     #caffe_bin = os.path.join(config_option('caffe_root'), 'bin', 'caffe.bin')
-        #     caffe_bin = os.path.join(config_option('caffe_root'), 'build', 'tools', 'caffe.bin')
-        # args = [caffe_bin,
-        #         'train',
-        #         '--solver=%s' % self.path(self.solver_file),
-        #         ]
-
-        # if gpu_id:
-        #     args.append('--gpu=%d' % gpu_id)
-        # if self.pretrained_model:
-        #     args.append('--weights=%s' % self.path(self.pretrained_model))
-        print " ".join("th /home/alexis/DIGITS/imagenet/main.lua -nGPU 3 -backend cudnn -netType alexnet".split() + args)
-        return "th /home/alexis/DIGITS/imagenet/main.lua -nGPU 3 -backend cudnn -netType alexnet".split() + args
+        print " ".join(args)
+        return args
 
 
     @override
@@ -190,12 +179,11 @@ class TorchTrainTask(TrainTask):
         # TODO: move to TrainTask
         from digits.webapp import socketio
 
-        if self.current_iteration == it:
-            return
+        # if self.current_iteration == it:
+        #     return
 
         self.current_iteration = it
-        self.progress = float(it)/self.solver.max_iter
-
+        self.progress = float(it)/self.max_iter
         socketio.emit('task update',
                 {
                     'task': self.html_id(),
