@@ -122,7 +122,6 @@ def image_classification_model_create():
                 policy['gamma'] = form.lr_sigmoid_gamma.data
             else:
                 return 'Invalid policy', 404
-
             job.tasks.append(
                     tasks.CaffeTrainTask(
                         job_dir         = job.dir(),
@@ -187,6 +186,7 @@ def image_classification_model_create():
             else:
                 return 'Invalid policy', 404
             network = form.custom_network.data #HACK
+
             job.tasks.append(
                     tasks.TorchTrainTask(
                         job_dir         = job.dir(),

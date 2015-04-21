@@ -19,7 +19,7 @@ print(opt)
 
 torch.setdefaulttensortype('torch.FloatTensor')
 
-cutorch.setDevice(opt.GPU) -- by default, use GPU 1
+cutorch.setDevice(opt.GPU) -- by default, use GPU 4
 torch.manualSeed(opt.manualSeed)
 
 print('Saving everything to: ' .. opt.save)

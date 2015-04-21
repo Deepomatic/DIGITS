@@ -25,14 +25,14 @@ function M.parse(arg)
                defaultDir .. '/imagenet_raw_images/256',
                'Home of ImageNet dataset')
     cmd:option('-manualSeed',         2, 'Manually set RNG seed')
-    cmd:option('-GPU',                1, 'Default preferred GPU')
+    cmd:option('-GPU',                4, 'Default preferred GPU')
     cmd:option('-nGPU',               1, 'Number of GPUs to use by default')
     cmd:option('-backend',     'cudnn', 'Options: cudnn | fbcunn | cunn')
     ------------- Data options ------------------------
     cmd:option('-nDonkeys',        0, 'number of donkeys to initialize (data loading threads)')
     ------------- Training options --------------------
     cmd:option('-nEpochs',         55,    'Number of total epochs to run') --nombre de passe
-    cmd:option('-epochSize',       10000, 'Number of batches per epoch') --valeur par passe
+    cmd:option('-epochSize',       10, 'Number of batches per epoch') --valeur par passe1000
     cmd:option('-epochNumber',     1,     'Manual epoch number (useful on restarts)')
     cmd:option('-batchSize',       128,   'mini-batch size (1 = pure stochastic)')
     cmd:option('-testBatchSize',    12,   'mini-batch size for testing')

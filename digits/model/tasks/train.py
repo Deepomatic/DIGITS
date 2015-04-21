@@ -216,6 +216,9 @@ class TrainTask(Task):
             d[name].data.append(value)
         else:
             # we might have missed one
+            print name 
+            print d[name]
+            print d[name].data
             d[name].data += [None] * (epoch_len - name_len - 1) + [value]
 
         for key in d:

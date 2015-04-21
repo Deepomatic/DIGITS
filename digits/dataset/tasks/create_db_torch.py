@@ -87,12 +87,14 @@ class CreateDbTorsh(Task):
     def task_arguments(self, **kwargs):
         args = ["th", os.path.join(os.path.dirname(os.path.dirname(digits.__file__)), 'fbcunn', 'generate_db.lua')]
         args += "-data {0} -LR 0.01 -cache {1} -name {2} -size {3}".format(self.path, self.path, self.db_name, self.image_dims[0]).split()
+        print args
         return args
 
     @override
     def process_output(self, line):
         from digits.webapp import socketio
 
+        print line
         match = re.search(r'estimation:\D+(\d+)\D+(\d+)', line)
         if match and float(match.group(2)) > 0:
             self.progress = float(match.group(1))/float(match.group(2))

@@ -40,8 +40,6 @@ class TorchTrainTask(TrainTask):
         super(TorchTrainTask, self).__init__(**kwargs)
         self.pickver_task_caffe_train = PICKLE_VERSION
 
-        #self.network = network
-
         self.current_iteration = 0
         self.last_pop = -1
         self.root = kwargs['dataset'].dir()
@@ -49,8 +47,8 @@ class TorchTrainTask(TrainTask):
         self.loaded_snapshot_epoch = None
         self.image_mean = None
         self.classifier = None
-        self.max_iter = 55*10000
         self.network = network
+        self.max_epoch = kwargs['train_epochs']
 
         self.solver_file = constants.CAFFE_SOLVER_FILE
         self.train_val_file = constants.CAFFE_TRAIN_VAL_FILE
@@ -58,6 +56,14 @@ class TorchTrainTask(TrainTask):
         self.deploy_file = constants.CAFFE_DEPLOY_FILE
         self.args = kwargs
         self.path = job_path
+        self.current_epoch = 1
+
+
+        self.nbrImages  = kwargs['dataset'].tasks[0].train_count
+        self.batchSize = kwargs['batch_size'] if isinstance(kwargs['batch_size'], int) else 128
+
+        self.max_iter = self.nbrImages / self.batchSize * self.max_epoch
+
 
 
     def __getstate__(self):
@@ -91,15 +97,9 @@ class TorchTrainTask(TrainTask):
         """
         Update current_iteration
         """
-        self.current_iteration += 1
-
-        # if self.current_iteration <= self.pop:
-        #     return
-
-        # # self.current_iteration = it
-        # self.pop = self.current_iteration + 100
-        # self.send_progress_update(self.pop/100)
-        self.send_progress_update(self.current_iteration)
+        self.current_iteration += 15 #lua test each 15 iter
+        print "curr:{}, epoch:{}, max_iter:{}, progress:{}".format(self.current_iteration, self.current_epoch, self.max_iter, self.current_iteration / float(self.max_iter))
+        self.send_progress_update(self.current_iteration / float(self.max_iter))
 
     ### Task overrides
 
@@ -111,8 +111,13 @@ class TorchTrainTask(TrainTask):
         args += ["-LR", str(self.args['learning_rate'])]
         args += ["-cache", self.path]
         args += ["-nGPU", "1"]
+        args += ["-GPU", "3"]
         args += ["-backend", "cudnn"]
         args += ["-netType", "alexnet"] #mettre le nom du reseau
+        args += ["-nEpochs", str(self.max_epoch)]
+        args += ["-epochSize", str(int(self.nbrImages / self.batchSize))]
+        args += ["-batchSize", str(self.batchSize)]
+        args += ["-model", self.network]
 
         print " ".join(args)
         return args
@@ -160,17 +165,26 @@ class TorchTrainTask(TrainTask):
     def process_output(self, line):
         match = re.search("(\S{10} \S{8}) Epoch (\d+) Accuracy top1-%: (\d+\.?\d+).*Loss: (\d+\.?\d+).*", str(line.strip()))
         print line, match
-        if not match:
-           return True
-        #return (None, None, None)
-        self.new_iteration() ## CHECK 
-        accuracy = match.group(3)
-        loss = match.group(4)
-        self.save_train_output("accuracy", "Accuracy", float(accuracy)/100)
-        self.save_train_output("loss", "Loss", float(loss))
+        if match:
+            self.current_epoch = match.group(2)
+            self.new_iteration() ## CHECK 
+            accuracy = match.group(3)
+            loss = match.group(4)
+            self.save_train_output("accuracy", "Accuracy", float(accuracy)/100)
+            self.save_train_output("loss", "Loss", float(loss))
 
-        return True
+            return True
+        match = re.search(r"Epoch:.*\[(\d+)\]\[TESTING SUMMARY\] Total Time\(s\): \d+.\d+\s+\S+ \S+ \(per batch\): (\d+.\d+)\s+.*top-1 (\d+.\d+)", line)
+        if match:
+            self.current_epoch = match.group(1)
+            self.new_iteration()
+            accuracy = match.group(3)
+            loss = match.group(2)
+            self.save_val_output("accuracy", "Accuracy", float(accuracy)/100)
+            self.save_val_output("loss", "Loss", float(loss))
+            return True
 
+        return True #hack to avoid flood in the output 
 
     def send_iteration_update(self, it):
         """
