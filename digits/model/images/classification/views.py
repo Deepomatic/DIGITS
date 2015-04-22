@@ -151,16 +151,32 @@ def image_classification_model_create():
         job = ImageClassificationModelJob(
         name        = form.model_name.data,
         dataset_id  = datasetJob.id(),)
-        model_path = "{}/_{}.lua".format(job._dir, form.model_name.data)
-        with open(model_path, 'w') as f:
-            f.write(form.custom_network.data)
 
+        model_path = None
         try:
             pretrained_model = None
             if form.method.data == 'custom':
-                pass
-                #text_format.Merge(form.custom_network.data, network)
-                #pretrained_model = form.custom_network_snapshot.data.strip()
+                pretrained_model = form.custom_network_snapshot.data.strip()
+                print pretrained_model
+                model_path = "{}/_{}.lua".format(job._dir, form.model_name.data)
+                with open(model_path, 'w') as f:
+                    f.write(form.custom_network.data)
+
+            elif form.method.data == 'standard':
+                found = False
+                networks_dir = os.path.join(os.path.dirname(digits.__file__), 'standard-networks')
+                for filename in os.listdir(networks_dir):
+                    path = os.path.join(networks_dir, filename)
+                    if os.path.isfile(path):
+                        match = re.match(r'%s.lua' % form.standard_networks.data, filename)
+                        if match:
+                            model_path = filename
+                            found = True
+                            break
+                if not found:
+                    raise Exception('Unknown standard model "%s"' % form.standard_networks.data)
+            elif form.method.data == 'previous':
+                raise Exception("Unsupported with torch") #fix
             else:
                 raise Exception('Unrecognized method: "%s"' % form.method.data)
 
@@ -349,6 +365,7 @@ def get_standard_networks():
             ('alexnet', 'AlexNet'),
             #('vgg-16', 'VGG (16-layer)'), #XXX model won't learn
             ('googlenet', 'GoogLeNet'),
+            ('alexnet_fbcunn', 'Alexnet(fbcunn)')
             ]
 
 def get_default_standard_network():

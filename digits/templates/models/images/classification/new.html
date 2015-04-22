@@ -432,6 +432,10 @@ function customizeNetwork(network, snapshot_list) {
                                 <a href="http://arxiv.org/abs/1409.4842" target="_blank">Original paper</a>
                                 [2014]
                             </td>
+                            {% elif network.data == 'alexnet_fbcunn' %}
+                            <td>
+                                alexnet using torch and fbcunn
+                            </td>
                             <td>256x256</td>
                             {% else %}
                             <td></td><td>?</td>

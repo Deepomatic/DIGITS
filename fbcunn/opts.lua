@@ -56,7 +56,7 @@ function M.parse(arg)
                             cmd:string(opt.name, opt,
                                        {retrain=true, optimState=true, cache=true, data=true}))
     -- add date/time
-    opt.save = paths.concat(opt.save, ',' .. os.date():gsub(' ',''))
+    opt.save = paths.concat(opt.save, '-' .. os.date():gsub(' ',''))
     return opt
 end
 

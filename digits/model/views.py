@@ -79,6 +79,10 @@ def models_customize():
             if match:
                 with open(path) as infile:
                     return json.dumps({'network': infile.read()})
+            match = re.match(r'%s.lua' % network, filename)
+            if match:
+                with open(path) as infile:
+                    return json.dumps({'network': infile.read()})            
     job = scheduler.get_job(network)
     snapshot = None
     try:

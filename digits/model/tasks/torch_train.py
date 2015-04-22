@@ -112,7 +112,7 @@ class TorchTrainTask(TrainTask):
         args += ["-LR", str(self.args['learning_rate'])]
         args += ["-cache", self.path]
         args += ["-nGPU", "1"]
-        args += ["-GPU", "3"]
+        args += ["-GPU", "4"]
         args += ["-backend", "cudnn"]
         args += ["-netType", self.network_name] #mettre le nom du reseau
         args += ["-nEpochs", str(self.max_epoch)]
@@ -121,7 +121,6 @@ class TorchTrainTask(TrainTask):
         args += ["-model", self.network]
 
         print " ".join(args)
-        sys.exit(0)
         return args
 
 
