@@ -47,10 +47,14 @@ function M.parse(arg)
     ---------- Custom options ----------------------------------
     cmd:option('-model', 'none', 'path to lua model')
     cmd:option('-size', 256, 'resize default 256')
+    cmd:option('-crop', 256, 'crop size')
     cmd:option('-name', 'db', 'name of the db')
     cmd:text()
 
     local opt = cmd:parse(arg or {})
+
+    opt.size = {3, opt.size, opt.size}
+    opt.crop = {3, opt.crop, opt.crop}
     -- add commandline specified options
     opt.save = paths.concat(opt.cache,
                             cmd:string(opt.name, opt,

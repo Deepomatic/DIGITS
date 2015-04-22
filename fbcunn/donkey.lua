@@ -25,8 +25,8 @@ if not os.execute('cd ' .. opt.data) then
     error(("could not chdir to '%s'"):format(opt.data))
 end
 
-local loadSize   = {3, 256, 256}
-local sampleSize = {3, 224, 224}
+local loadSize   = opt.size --{3, 256, 256}
+local sampleSize = opt.crop --{3, 224, 224}
 
 -- channel-wise mean and std. Calculate or load them from disk later in the script.
 local mean,std
@@ -42,9 +42,9 @@ local trainHook = function(self, path)
    -- find the smaller dimension, and resize it to 256 (while keeping aspect ratio)
    local iW, iH = input:size()
    if iW < iH then
-      input:size(256, 256 * iH / iW);
+      input:size(self.loadSize[3], self.loadSize[3] * iH / iW);
    else
-      input:size(256 * iW / iH, 256);
+      input:size(self.loadSize[3] * iW / iH, self.loadSize[3]);
    end
    iW, iH = input:size();
    -- do random crop
@@ -74,8 +74,8 @@ else
    print('Creating train metadata')
    trainLoader = dataLoader{
       paths = {paths.concat(opt.data, 'train')},
-      loadSize = {3, 256, 256},
-      sampleSize = {3, 224, 224},
+      loadSize = opt.size --{3, 256, 256},
+      sampleSize = opt.crop --{3, 224, 224},
       split = 100,
       verbose = true
    }
@@ -110,9 +110,9 @@ local testHook = function(self, path)
    -- find the smaller dimension, and resize it to 256 (while keeping aspect ratio)
    local iW, iH = input:size()
    if iW < iH then
-      input:size(256, 256 * iH / iW);
+      input:size(self.loadSize[3], self.loadSize[3] * iH / iW);
    else
-      input:size(256 * iW / iH, 256);
+      input:size(self.loadSize[3] * iW / iH, self.loadSize[3]);
    end
    iW, iH = input:size();
    local im = input:toTensor('float','RGB','DHW')
@@ -150,8 +150,8 @@ else
    print('Creating test metadata')
    testLoader = dataLoader{
       paths = {paths.concat(opt.data, 'val')},
-      loadSize = {3, 256, 256},
-      sampleSize = {3, 224, 224},
+      loadSize = opt.size -- {3, 256, 256},
+      sampleSize = opt.crop -- {3, 224, 224},
       split = 0,
       verbose = true,
       forceClasses = trainLoader.classes -- force consistent class indices between trainLoader and testLoader
