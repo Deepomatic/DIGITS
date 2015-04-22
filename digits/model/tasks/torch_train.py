@@ -119,6 +119,8 @@ class TorchTrainTask(TrainTask):
         args += ["-epochSize", str(int(self.nbrImages / self.batchSize))]
         args += ["-batchSize", str(self.batchSize)]
         args += ["-model", self.network]
+        if self.args['pretrained_model'] is not None:
+            args += ["-retrain", self.args['pretrained_model']]
 
         print " ".join(args)
         return args
