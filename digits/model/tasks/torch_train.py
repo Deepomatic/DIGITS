@@ -32,7 +32,7 @@ class TorchTrainTask(TrainTask):
         #TODO
         pass
 
-    def __init__(self, network, job_path, **kwargs):
+    def __init__(self, network, job_path, network_name, **kwargs):
         """
         Arguments:
         network -- a NetParameter defining the network
@@ -64,6 +64,7 @@ class TorchTrainTask(TrainTask):
 
         self.max_iter = self.nbrImages / self.batchSize * self.max_epoch
 
+        self.network_name = network_name
 
 
     def __getstate__(self):
@@ -113,13 +114,14 @@ class TorchTrainTask(TrainTask):
         args += ["-nGPU", "1"]
         args += ["-GPU", "3"]
         args += ["-backend", "cudnn"]
-        args += ["-netType", "alexnet"] #mettre le nom du reseau
+        args += ["-netType", self.network_name] #mettre le nom du reseau
         args += ["-nEpochs", str(self.max_epoch)]
         args += ["-epochSize", str(int(self.nbrImages / self.batchSize))]
         args += ["-batchSize", str(self.batchSize)]
         args += ["-model", self.network]
 
         print " ".join(args)
+        sys.exit(0)
         return args
 
 
