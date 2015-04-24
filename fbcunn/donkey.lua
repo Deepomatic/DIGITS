@@ -20,6 +20,7 @@ local trainCache = paths.concat(opt.cache, 'trainCache.t7')
 local testCache = paths.concat(opt.cache, 'testCache.t7')
 local meanstdCache = paths.concat(opt.cache, 'meanstdCache.t7')
 
+
 -- Check for existence of opt.data
 if not os.execute('cd ' .. opt.data) then
     error(("could not chdir to '%s'"):format(opt.data))
@@ -74,8 +75,8 @@ else
    print('Creating train metadata')
    trainLoader = dataLoader{
       paths = {paths.concat(opt.data, 'train')},
-      loadSize = opt.size --{3, 256, 256},
-      sampleSize = opt.crop --{3, 224, 224},
+      loadSize = opt.size, --{3, 256, 256},
+      sampleSize = opt.crop, --{3, 224, 224},
       split = 100,
       verbose = true
    }
@@ -150,8 +151,8 @@ else
    print('Creating test metadata')
    testLoader = dataLoader{
       paths = {paths.concat(opt.data, 'val')},
-      loadSize = opt.size -- {3, 256, 256},
-      sampleSize = opt.crop -- {3, 224, 224},
+      loadSize = opt.size, -- {3, 256, 256},
+      sampleSize = opt.crop, -- {3, 224, 224},
       split = 0,
       verbose = true,
       forceClasses = trainLoader.classes -- force consistent class indices between trainLoader and testLoader

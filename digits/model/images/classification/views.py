@@ -170,7 +170,7 @@ def image_classification_model_create():
                     if os.path.isfile(path):
                         match = re.match(r'%s.lua' % form.standard_networks.data, filename)
                         if match:
-                            model_path = filename
+                            model_path = path
                             found = True
                             break
                 if not found:
@@ -202,7 +202,7 @@ def image_classification_model_create():
             else:
                 return 'Invalid policy', 404
             #network = form.custom_network.data #HACK
-
+            
             job.tasks.append(
                     tasks.TorchTrainTask(
                         job_dir         = job.dir(),
@@ -363,9 +363,8 @@ def get_standard_networks():
     return [
             ('lenet', 'LeNet'),
             ('alexnet', 'AlexNet'),
-            #('vgg-16', 'VGG (16-layer)'), #XXX model won't learn
             ('googlenet', 'GoogLeNet'),
-            ('alexnet_fbcunn', 'Alexnet(fbcunn)')
+            ('alexnet_cudnn', 'Alexnet(fbcunn)')
             ]
 
 def get_default_standard_network():

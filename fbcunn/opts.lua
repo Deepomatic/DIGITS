@@ -47,18 +47,19 @@ function M.parse(arg)
     ---------- Custom options ----------------------------------
     cmd:option('-model', 'none', 'path to lua model')
     cmd:option('-size', 256, 'resize default 256')
-    cmd:option('-crop', 256, 'crop size')
+    cmd:option('-crop', 254, 'crop size')
     cmd:option('-name', 'db', 'name of the db')
+    cmd:option('-save', '/tmp', 'folder to save the models')
     cmd:text()
 
     local opt = cmd:parse(arg or {})
-
+    -- add commandline specified options
+    opt.save = paths.concat(opt.name, opt.size)
+    --paths.concat(opt.cache,
+               --             cmd:string(opt.name, opt,
+               --                        {retrain=true, optimState=true, cache=true, data=true}))
     opt.size = {3, opt.size, opt.size}
     opt.crop = {3, opt.crop, opt.crop}
-    -- add commandline specified options
-    opt.save = paths.concat(opt.cache,
-                            cmd:string(opt.name, opt,
-                                       {retrain=true, optimState=true, cache=true, data=true}))
     -- add date/time
     opt.save = paths.concat(opt.save, '-' .. os.date():gsub(' ',''))
     return opt
