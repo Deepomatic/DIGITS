@@ -36,6 +36,29 @@ function newQueue () --queue
 	return {pop = pop, push = push, size = function() return _self.size end}
 end
 
+
+
+function DB(batchSize, size, label)
+  local _self = {data = {}, batchSize = batchSize, size = size, range = nil}
+  local function get(idx) 
+    if range == nil or idx > range + batchSize or idx < range then
+        local part = math.floor(idx/batchSize)
+        if part ~= range then
+          _self.data = torch.load("part-" .. part .. '.t7', part)
+          _self.range = part
+        end
+        if label == nil then
+          return _self.data.db[idx%batchSize]
+        else
+          return _self.data.label[idx%batchSize]
+        end
+    end
+
+    return idx
+  end
+  return {batchSize = _self.batchSize, size = _self.size, get = get}
+end
+
 function split(str, delim)
     local res = {}
     local pattern = string.format("([^%s]+)%s", delim, delim)
@@ -64,12 +87,14 @@ end
 
 function lines_from(file, size, resize)
   if not file_exists(file) then return {} end
-  local batchSize = 1000 --arbitrary 
+  local batchSize = 64 --arbitrary 
   --local db = torch.Tensor(batchSize, 3, resize, resize):double()
   local part = {
-  db = torch.Tensor(batchSize, 3, resize, resize):double(),
-  labels = torch.Tensor(batchSize)
+  data = torch.Tensor(batchSize, 3, resize, resize):double(),
+  labels = torch.Tensor(batchSize),
   }
+
+
   --local labels = torch.Tensor(size)
   local i = 1
   local count = 0
@@ -78,23 +103,25 @@ function lines_from(file, size, resize)
   labels = {}
   queue = newQueue()
   pool = {}
-  for i=1,150 do
+  for i=1,32 do
     table.insert(pool, coroutine.create(co_run))
   end
 
 	for line in io.lines(file) do
-      local tmp = i
+      if i >= size then
+        break
+      end
+      local k = i
 	  	queue:push(function ()
-          print(tmp, line)
 			  	local img = image.scale(image.load(line), resize, resize)
-			  	part.db[tmp - (batchSize * count)] = img
+			  	part.data[k - (batchSize * count)] = img
 			  	local line = split(line, "/")
 			  	if labels[line[#line]] == nil then 
 			  		labels[line[#line]] = #labels
 			  	end
-			  	part.labels[tmp - (batchSize * count)] = labels[line[#line]]
+			  	part.labels[k - (batchSize * count)] = labels[line[#line]]
 		end)
-	    i = i + 1
+	  i = i + 1
 		if i % batchSize == 0 and i / batchSize > 0 then
 			while queue:size() > 0 do
         local k = 0
@@ -102,32 +129,31 @@ function lines_from(file, size, resize)
 					if coroutine.status(pool[j]) == 'suspended' then
 						coroutine.resume(pool[j], queue)
           elseif coroutine.status(pool[j]) == 'dead' then
-           print(k, j)
+           pool[j] = coroutine.create(co_run) -- hack but w/e it's lua
           else
             print(coroutine.status(pool[j]))
 					end
 				end
 			end
-
-			local tmp = calculate_mean_std(part.db)
+			local tmp = calculate_mean_std(part.data)
 			for j=1,#mean do
-				mean[j] = (mean[j] + tmp.mean[j])/2
-				std[j] = (std[j] + tmp.std[j])/2
+				mean[j] = mean[j] + tmp.mean[j]
+				std[j] = std[j] + tmp.std[j]
 			end
-      print(mean)
-      print(std)
-			torch.save("part" .. count .. '.t7', part)
+			torch.save("part-" .. count .. '.t7', part)
 			count = count + 1
-			part.db:zero()
+			part.data:zero()
 			part.labels:zero()
       print("Done part", count)
 		end
 	end
 
-	local tmp = calculate_mean_std(part.db)
+	-- local tmp = calculate_mean_std(part.db)
 	for j=1,#mean do
-		mean[j] = (mean[j] + tmp.mean[j])/2
-		std[j] = (std[j] + tmp.std[j])/2
+		mean[j] = mean[j]/(count + 1)
+		std[j] = std[j] / (count + 1)
+    print("mean:"..mean[j])
+    print("std:"..std[j])
 	end
 	torch.save("part-" .. count .. '.t7', part)
 
@@ -138,6 +164,18 @@ function lines_from(file, size, resize)
     part = count,
     prefix = "part-"
  	}
+
+  for i=1,trainData.part do
+    local name = trainData.prefix .. i .. '.t7'
+    local tmp = torch.load(name)
+    print ("loading ".. name)
+    for j=1,#mean do
+      tmp.data[{ {},j,{},{} }]:add(-mean[j])
+      tmp.data[{ {},j,{},{} }]:div(std[j])
+    end
+    torch.save(name, tmp)
+  end
+
   return trainData
 end
 
@@ -146,12 +184,12 @@ function generate_db(file, size, resize, name)
 	mean = {}
 	std = {}
 
-	for i,channel in ipairs(channels) do
-		mean[i] = db_train.data[{ {},i,{},{} }]:mean()
-		std[i] = db_train.data[{ {},i,{},{} }]:std()
-		db_train.data[i]:add(-mean[i])
-		db_train.data[i]:div(std[i])
-	end
+	-- for i,channel in ipairs(channels) do
+	-- 	mean[i] = db_train.data[{ {},i,{},{} }]:mean()
+	-- 	std[i] = db_train.data[{ {},i,{},{} }]:std()
+	-- 	db_train.data[i]:add(-mean[i])
+	-- 	db_train.data[i]:div(std[i])
+	-- end
 	neighborhood = image.gaussian1D(7)
 	normalization = nn.SpatialContrastiveNormalization(1, neighborhood):double()
 
@@ -160,7 +198,7 @@ function generate_db(file, size, resize, name)
 		 trainStd = db_train.data[{ {},i }]:std()
 
 		 print('training data, '..channel..'-channel, mean: ' .. trainMean)
-		print('training data, '..channel..'-channel, standard deviation: ' .. trainStd)
+		  print('training data, '..channel..'-channel, standard deviation: ' .. trainStd)
 
 	end
 	if name == nil then
