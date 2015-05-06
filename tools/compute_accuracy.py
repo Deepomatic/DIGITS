@@ -22,6 +22,7 @@ sys.path.insert(0, caffe_root + 'python')
 
 
 import caffe
+import customClassifier
 
 import requests
 
@@ -57,7 +58,7 @@ def compute_accuracy(snapshot, deploy_file, labels_file, mean_file, val_file):
 
     # Loading the classifier
     caffe.set_mode_gpu()
-    net = caffe.Classifier(deploy_file, snapshot,
+    net = customClassifier.Classifier(deploy_file, snapshot,
                        mean=mean_arr.mean(1).mean(1),
                        channel_swap=(2,1,0),
                        raw_scale=255)
