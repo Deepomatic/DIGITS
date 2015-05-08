@@ -14,7 +14,7 @@ import urllib
 
 import pandas as pd
 import numpy as np
-import joblib
+import joblib, skimage
 
 
 caffe_root = '/opt/caffe/'
@@ -49,7 +49,7 @@ def compute_accuracy(snapshot, deploy_file, labels_file, mean_file, val_file):
     """
 
     # Read validation datas
-    val_matrix = pd.read_csv(val_file, header=None,sep=" ")
+    val_matrix = pd.read_csv(val_file, header=None,sep=r" (?!(.*) ")")
 
     mean_blob = caffe.proto.caffe_pb2.BlobProto()
     mean_data = open(mean_file, 'rb').read()
@@ -71,7 +71,10 @@ def compute_accuracy(snapshot, deploy_file, labels_file, mean_file, val_file):
  
     for i in range(0, size): 
         cur_image = val_matrix[0][i]
-        input_image = caffe.io.load_image(cur_image)
+        input_image = image.load_image(cur_image, True)
+        input_image = image.resize_image(input_image, 256, 256, resize_mode='half_crop')
+        input_image = skimage.img_as_float(input_image).astype(np.float32)
+
         labels[i] = val_matrix[1][i]
         probas[i] = net.predict([input_image], oversample=False)
         prediction[i] = probas[i].argmax()
