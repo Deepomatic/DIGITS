@@ -71,8 +71,8 @@ def compute_accuracy(snapshot, deploy_file, labels_file, mean_file, val_file):
  
     for i in range(0, size): 
         cur_image = val_matrix[0][i]
-        input_image = image.load_image(cur_image, True)
-        input_image = image.resize_image(input_image, 256, 256, resize_mode='half_crop')
+        input_image = utils.image.load_image(cur_image, True)
+        input_image = utils.image.resize_image(input_image, 256, 256, resize_mode='half_crop')
         input_image = skimage.img_as_float(input_image).astype(np.float32)
 
         labels[i] = val_matrix[2][i]
