@@ -64,7 +64,7 @@ def compute_accuracy(snapshot, deploy_file, labels_file, mean_file, val_file):
                        raw_scale=255)
 
     size = len(val_matrix)
-    num_classes = np.array(val_matrix[1])[-1]+1
+    num_classes = np.array(val_matrix[2])[-1]+1
     prediction = np.zeros(size, dtype=int)
     labels = np.zeros(size, dtype=int)
     probas = np.zeros([size, num_classes], dtype=float)
@@ -75,7 +75,7 @@ def compute_accuracy(snapshot, deploy_file, labels_file, mean_file, val_file):
         input_image = image.resize_image(input_image, 256, 256, resize_mode='half_crop')
         input_image = skimage.img_as_float(input_image).astype(np.float32)
 
-        labels[i] = val_matrix[1][i]
+        labels[i] = val_matrix[2][i]
         probas[i] = net.predict([input_image], oversample=False)
         prediction[i] = probas[i].argmax()
         if i % (size/500) == 0:
