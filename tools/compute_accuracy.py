@@ -49,7 +49,7 @@ def compute_accuracy(snapshot, deploy_file, labels_file, mean_file, val_file):
     """
 
     # Read validation datas
-    val_matrix = pd.read_csv(val_file, header=None,sep=r" (?!(.*) )")
+    val_matrix = pd.read_csv(val_file, engine='python', header=None,sep=r" (?!(.*) )")
 
     mean_blob = caffe.proto.caffe_pb2.BlobProto()
     mean_data = open(mean_file, 'rb').read()
