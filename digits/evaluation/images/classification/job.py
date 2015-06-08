@@ -1,34 +1,39 @@
-# Copyright (c) 2014-2015, NVIDIA CORPORATION.  All rights reserved.
 # -*- coding: utf-8 -*-
+
+from ..job import ImageEvaluationJob
+from digits import utils
+from digits.dataset import tasks
+from digits.model import tasks
+from digits.utils import subclass, override
+from digits.webapp import app, scheduler
 
 import os.path
 
-from digits.dataset import tasks
-from digits.model import tasks
-from digits import utils
-from digits.utils import subclass, override
-from ..job import ImageEvaluationJob
-from digits.webapp import app, scheduler
 # NOTE: Increment this everytime the pickled object changes
 PICKLE_VERSION = 1
 
 @subclass
 class ImageClassificationEvaluationJob(ImageEvaluationJob):
     """
-    A Job that creates an image dataset for a classification network
+    A Job that creates a performance analysis for a classification network
     """
 
     def __init__(self, modeljob_id, model_epoch=None, **kwargs):
+        """
+        Arguments:
+        modeljob_id -- the classification model job id
+        model_epoch -- the epoch corresponding to the snapshot we want to evaluate
+
+        Keyword arguments:
+        """
+
+        super(ImageClassificationEvaluationJob, self).__init__(**kwargs)
 
         self.model_job = scheduler.get_job(modeljob_id)
         self.model_epoch = model_epoch
-
-        super(ImageClassificationEvaluationJob, self).__init__(**kwargs)
         self.pickver_job_evaluation_image_classification = PICKLE_VERSION
-
         self.labels_file = None
 
-        # We get the snapshot file
         task = self.model_job.train_task()
 
         snapshot_filename = None 
@@ -44,8 +49,6 @@ class ImageClassificationEvaluationJob(ImageEvaluationJob):
             raise ValueError('Invalid epoch')
 
         self.snapshot_filename = snapshot_filename
-
-
 
 
     @override

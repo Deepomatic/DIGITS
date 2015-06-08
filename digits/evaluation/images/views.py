@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2015, DEEPOMATIC SAS.  All rights reserved.
+# -*- coding: utf-8 -*-
 
 from digits.webapp import app
 import classification.views

@@ -1,35 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright (c) 2015, DEEPOMATIC SAS,  All rights reserved.
 
-import sys
-import os
-import re
-import argparse
-import time
-import logging
 from random import shuffle
 from urlparse import urlparse
-import urllib
-
-import pandas as pd
-import numpy as np
+import argparse
 import joblib, skimage
-
-
-caffe_root = '/opt/caffe/'
-sys.path.insert(0, caffe_root + 'python')
-
-
-import caffe
-
-import requests
+import logging
+import numpy as np
+import os
+import pandas as pd
+import re
+import sys
+import time
+import urllib
 
 # Add path for DIGITS package
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import digits.config
 digits.config.load_config()
 from digits import utils, log
+import caffe
+import requests
 
 logger = logging.getLogger('digits.tools.compute_accuracy')
 
@@ -38,6 +29,10 @@ class Classifier(caffe.Net):
     """
     Classifier extends Net for image class prediction
     by scaling, center cropping, or oversampling.
+    It differs from Caffe original class version by 
+    taking the last output layer instead of the first (which
+    is not always the right output layer, e.g in the case
+    of googlenet)
     """
     def __init__(self, model_file, pretrained_file, image_dims=None,
                  mean=None, input_scale=None, raw_scale=None,
@@ -110,6 +105,7 @@ class Classifier(caffe.Net):
             caffe_in[ix] = self.transformer.preprocess(self.inputs[0], in_)
         out = self.forward_all(**{self.inputs[0]: caffe_in})
 
+        # Where it differs from the original Caffe class
         if out_layer_name == None:
             predictions = out[self.outputs[-1]]
         else:
@@ -121,78 +117,77 @@ class Classifier(caffe.Net):
             predictions = predictions.mean(1)
 
         return predictions
+ 
 
-
-def unescape(s):
-    return urllib.unquote(s) 
-
-def compute_accuracy(snapshot, deploy_file, labels_file, mean_file, val_file, resize_mode): 
+def compute_accuracy(snapshot, deploy_file, labels_file, mean_file, img_set, width, height, resize_mode, oversample=False): 
     """
-    Parses a folder of images into three textfiles
+    Evaluate a Net on a set of images, and dump the result in two
+    pickle files. 
     Returns True on sucess
 
     Arguments:
-    folder -- a folder containing folders of images (can be a filesystem path or a url)
-    labels_file -- file for labels
+    snapshot -- a Caffe trained model 
+    deploy_file -- the corresponding deploy file
+    labels_file -- the file containing the dataset labels
+    mean_file -- the dataset mean file
+    img_set -- the file containing a list of images 
+    resize_mode -- the mode used to resize images
 
-    Keyword Arguments: 
+    Keyword arguments:
+    oversampling -- boolean, True if oversampling should be enabled
     """
 
-    # Read validation datas
-    val_matrix = pd.read_csv(val_file, engine='python', header=None,sep=r" (?!(.*) )")
+    img_matrix = pd.read_csv(img_set, engine='python', header=None,sep=r" (?!(.*) )")
 
     mean_blob = caffe.proto.caffe_pb2.BlobProto()
     mean_data = open(mean_file, 'rb').read()
     mean_blob.ParseFromString(mean_data)
-    mean_arr = np.array(caffe.io.blobproto_to_array(mean_blob))[0]
+    mean = np.array(caffe.io.blobproto_to_array(mean_blob))[0].mean(1).mean(1)
 
     # Loading the classifier
     caffe.set_mode_gpu()
     net = Classifier(deploy_file, snapshot,
-                       mean=mean_arr.mean(1).mean(1),
+                       mean=mean,
                        channel_swap=(2,1,0),
                        raw_scale=255)
 
-    size = len(val_matrix)
-    num_classes = np.array(val_matrix[2])[-1]+1
+    size = len(img_matrix)
+    num_classes = np.array(img_matrix[2])[-1]+1
     prediction = np.zeros(size, dtype=int)
     labels = np.zeros(size, dtype=int)
     probas = np.zeros([size, num_classes], dtype=float)
  
     for i in range(0, size): 
-        cur_image = val_matrix[0][i]
+        cur_image = img_matrix[0][i]
         input_image = utils.image.load_image(cur_image)
-        input_image = utils.image.resize_image(input_image, 256, 256, resize_mode=resize_mode)
+        input_image = utils.image.resize_image(input_image, width, height, resize_mode=resize_mode)
         input_image = skimage.img_as_float(input_image).astype(np.float32)
 
-        labels[i] = val_matrix[2][i]
+        labels[i] = img_matrix[2][i]
         probas[i] = net.predict([input_image], oversample=False)
         prediction[i] = probas[i].argmax()
-        if i % (size/500) == 0:
+        if size > 500 and i % (size/500) == 0:
             logger.debug("Progress: %0.2f" % (i/float(size)))
 
     snapshot_file, snapshot_extension = os.path.splitext(snapshot)
 
-
+    # Dumping the result
     joblib.dump(probas, snapshot_file + "-accuracy-proba.pkl")
     joblib.dump(labels, snapshot_file + "-accuracy-labels.pkl")
     logger.debug("Done")
-
   
     return True
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Accuracy-Computing tool - DIGITS')
-
-    ### Positional arguments
  
     parser.add_argument('snapshot',
-            help='The file containing the model snapshot.'
+            help='The Caffe model snapshot.'
             )
 
     parser.add_argument('deploy_file',
-            help='The file containing the deploy_file.'
+            help='The deploy_file.'
             )
 
     parser.add_argument('labels',
@@ -200,22 +195,37 @@ if __name__ == '__main__':
             )
 
     parser.add_argument('mean_file',
-            help='The file containing the mean file.'
+            help='The dataset mean file.'
             )
-    parser.add_argument('val_file',
-            help='The file containing the val.txt'
+    parser.add_argument('img_set',
+            help='The file representing the set of files to evaluate'
             )
  
+    parser.add_argument('width',            
+            type=int,
+            help='images width'
+            )
+    parser.add_argument('height',         
+            type=int,
+            help='images height'
+            )
     parser.add_argument('resize_mode',
-            help='The way we resize images'
+            help='The mode used to resize images'
             )
 
 
     args = vars(parser.parse_args())
- 
     start_time = time.time()
 
-    if compute_accuracy(args['snapshot'], args['deploy_file'] ,args['labels'] ,args['mean_file'], args['val_file'], args['resize_mode']):
+    if compute_accuracy(
+        args['snapshot'], 
+        args['deploy_file'] ,
+        args['labels'] ,
+        args['mean_file'], 
+        args['img_set'], 
+        args['width'],
+        args['height'],
+        args['resize_mode']):
         logger.info('Done after %d seconds.' % (time.time() - start_time))
         sys.exit(0)
     else:

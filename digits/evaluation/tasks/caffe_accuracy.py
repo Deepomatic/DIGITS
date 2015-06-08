@@ -1,42 +1,40 @@
-# Copyright (c) 2014-2015, NVIDIA CORPORATION.  All rights reserved.
 # -*- coding: utf-8 -*-
 
-import sys
-import os.path
-import os
-import re 
-import caffe
-import time
-import math
-import subprocess
-import digits
-
-
-
-import numpy as np
-import joblib
-
-from google.protobuf import text_format
-from caffe.proto import caffe_pb2
-
-from digits.task import Task
 from accuracy import AccuracyTask
+from caffe.proto import caffe_pb2
+from digits import utils, dataset
 from digits.config import config_option
 from digits.status import Status
-from digits import utils, dataset
+from digits.task import Task
 from digits.utils import subclass, override, constants
+from google.protobuf import text_format
+import caffe
+import digits
+import joblib
+import math
+import numpy as np
+import os
+import os.path
+import re 
+import subprocess
+import sys
+import time
 
 # NOTE: Increment this everytime the pickled object changes
 PICKLE_VERSION = 1
 
 @subclass
 class CaffeAccuracyTask(AccuracyTask):
-    """Compute the full accuracy"""
+    """
+    Computes the accuracy/recall and confusion matrix
+    corresponding to a given snapshot of a train task
+    """
     def __init__(self, job, snapshot, db_task, **kwargs):
         """
         Arguments:
-        job -- the job
-        snapshot -- the snapshot
+        job -- the job 
+        snapshot -- the snapshot file of the trained net
+        db_task -- the dataset db on which we evaluate the net
 
         Keyword arguments:
         """
@@ -73,11 +71,9 @@ class CaffeAccuracyTask(AccuracyTask):
 
     @override
     def task_arguments(self, resources):
-        
         train_task = self.job.model_job.train_task()
         dataset_val_task = self.db_task
         dataset_train_task = train_task.dataset.train_db_task()
-
         deploy_file = train_task.deploy_file
         dataset_labels = train_task.dataset.labels_file
         dataset_mean_file = dataset_train_task.mean_file
@@ -95,6 +91,10 @@ class CaffeAccuracyTask(AccuracyTask):
                 dataset_train_task.path(dataset_mean_file),
                 # val.txt
                 dataset_val_task.path(dataset_val_file),
+                # Img width
+                train_task.dataset.image_dims[1],
+                # Img height
+                train_task.dataset.image_dims[0],
                 # Resize mode
                 train_task.dataset.resize_mode
             ]
@@ -137,6 +137,7 @@ class CaffeAccuracyTask(AccuracyTask):
             self.labels_data = joblib.load(snapshot_file + "-accuracy-labels.pkl")
             self.prediction_data = self.probas_data.argmax(axis=1)
 
+            # Send the accuracy/recall curve and confusion matrix datas
             avg_accuracy = self.avg_accuracy_graph_data()
             confusion_matrix = self.confusion_matrix_data()
             socketio.emit('task update',

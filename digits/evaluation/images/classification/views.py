@@ -1,38 +1,35 @@
-# Copyright (c) 2014-2015, DEEPOMATIC SAS.  All rights reserved.
 # -*- coding: utf-8 -*-
 
-import os
-import re
-import sys
-import shutil
-import tempfile
-import random
-
-import numpy as np
+from caffe.proto import caffe_pb2
+from digits import utils
+from digits.config import config_option
+from digits.evaluation import tasks
+from digits.status import Status
+from digits.webapp import app, scheduler
 from flask import render_template, request, redirect, url_for, flash
 from google.protobuf import text_format
-from caffe.proto import caffe_pb2
+from job import ImageClassificationEvaluationJob
 
 import digits
-from digits.config import config_option
-from digits import utils
-from digits.webapp import app, scheduler
-from digits.evaluation import tasks
-from job import ImageClassificationEvaluationJob
-from digits.status import Status
+import numpy as np
+import os
+import random
+import re
+import shutil
+import sys
+import tempfile
 
 NAMESPACE = '/evaluations/images/classification'
 
 
 @app.route(NAMESPACE + '/new', methods=['GET'])
 def image_classification_evaluation_new():
-    # form = ImageClassificationEvaluationForm()
     return render_template('evaluations/images/classification/new.html', form=form)
 
 
 @app.route(NAMESPACE + '/accuracy', methods=['POST'])
 def image_classification_evaluation_create():
-    """Display the accuracy of a model """
+    """Creates a classification performance evaluation task """
 
     modelJob = scheduler.get_job(request.args['job_id'])
  
@@ -41,20 +38,20 @@ def image_classification_evaluation_create():
 
     job = None
     try:
-        # We retrieve the selected snapshot
+        # We retrieve the selected snapshot from the epoch and the train task
         epoch = None
         if 'snapshot_epoch' in request.form:
             epoch = int(request.form['snapshot_epoch'])
 
-
         job = ImageClassificationEvaluationJob( 
-            name=modelJob._name+"-accuracy-evaluation",
+            name=modelJob._name + "-accuracy-evaluation-e" + str(epoch),
             modeljob_id= modelJob.id(),
             model_epoch= epoch
             )
         
-
         dataset = job.model_job.train_task().dataset
+
+        # We create one task for the validation set if existing
         if dataset.val_db_task() != None:
             job.tasks.append(
                     tasks.CaffeAccuracyTask(                    
@@ -64,6 +61,8 @@ def image_classification_evaluation_create():
                         db_task         = dataset.val_db_task()
                         )
                     )
+
+        # We create one task for the testing set if existing
         if dataset.test_db_task() != None: 
             job.tasks.append(
                     tasks.CaffeAccuracyTask(                    
@@ -72,9 +71,9 @@ def image_classification_evaluation_create():
                         snapshot        = job.snapshot_filename,
                         db_task         = dataset.test_db_task()
                         )
-                    )
- 
+                    ) 
 
+        # The job is created
         scheduler.add_job(job)
         return redirect(url_for('evaluations_show', job_id=job.id()))
 

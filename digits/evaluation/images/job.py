@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2015, Deepomatic SAS  All rights reserved.
+# -*- coding: utf-8 -*-
 
 from ..job import EvaluationJob
 
@@ -7,7 +7,7 @@ PICKLE_VERSION = 1
 
 class ImageEvaluationJob(EvaluationJob):
     """
-    A Job that creates an image dataset
+    A Job that creates a classification performance evaluation
     """
 
     def __init__(self, **kwargs):

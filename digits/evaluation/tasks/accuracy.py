@@ -1,42 +1,32 @@
-# Copyright (c) 2014-2015, NVIDIA CORPORATION.  All rights reserved.
-
-import os
-import re
-import caffe
-import time
-import math
-import subprocess
-from collections import Counter 
-
-import pandas as pd
-import numpy as np
-from google.protobuf import text_format
+# -*- coding: utf-8 -*-
 from caffe.proto import caffe_pb2
-
-from digits.task import Task
-from digits.config import config_option
-from digits.status import Status
+from collections import Counter 
 from digits import utils, dataset
-from digits.utils import subclass, override, constants
+from digits.config import config_option
 from digits.dataset import ImageClassificationDatasetJob
+from digits.status import Status
+from digits.task import Task
+from digits.utils import subclass, override, constants
+from google.protobuf import text_format
+import caffe
+import math
+import numpy as np
+import os
+import pandas as pd
+import re
+import subprocess
+import time
 
 # NOTE: Increment this everytime the pickled object changes
 PICKLE_VERSION = 1
 
 @subclass
 class AccuracyTask(Task):
-    """Compute the full accuracy"""
-    def __init__(self, **kwargs):
-        """
-        Arguments:
-        job -- the job
-        snapshot -- the snapshot
+    """
+    Defines required methods for child accuracy classes
+    """
 
-        Keyword arguments:
-        percent_test -- percent of images used in the test set
-        """
-
-       
+    def __init__(self, **kwargs): 
         super(AccuracyTask, self).__init__(**kwargs) 
 
     def __getstate__(self):
@@ -48,15 +38,14 @@ class AccuracyTask(Task):
  
     def avg_accuracy_graph_data(self):
         """
-        Returns the average accuracy datas formatted for a C3.js graph
+        Returns the accuracy/recall datas formatted for a C3.js graph
         """
 
         if self.probas_data == None:
             return None
 
-        def f_seuil(threshold, probas):
+        def f_threshold(threshold, probas):
             N = len(probas)
-
             max_probs = np.max(probas, axis=1)
             mask_seuil = np.ma.masked_where(max_probs<threshold, max_probs)
  
@@ -69,20 +58,17 @@ class AccuracyTask(Task):
             acc = np.mean(labels_masked==predict_masked)
             return acc, N_threshold
 
-        # return 100-200 values or fewer
         t = ['Threshold']
         accuracy = ['Accuracy']
         response = ['Recall']
 
         max_proba = np.max(self.probas_data)
 
-
         for i in range(20): 
-            acc, num = f_seuil(max_proba * i / 20.0, self.probas_data)
+            acc, num = f_threshold(max_proba * i / 20.0, self.probas_data)
             t += [max_proba * i / 20.0]
             accuracy += [acc] 
             response += [num]
-
         return  {        
             "x": "Threshold",
             "columns": [ t, accuracy, response ],
@@ -94,11 +80,12 @@ class AccuracyTask(Task):
 
     def confusion_matrix_data(self):
         """
-        Returns the matrix confusion datas formatted for a C3.js graph
+        Returns the confusion matrix datas formatted in the form of a string
+        TODO: return a dictionnary and make the formatting in the template
         """
         if self.probas_data == None:
             return None 
-        # return 100-200 values or fewer
+
         train_task = self.job.model_job.train_task()
         dataset_train_task = train_task.dataset.train_db_task()
         dataset_labels = train_task.dataset.labels_file
@@ -123,15 +110,21 @@ class AccuracyTask(Task):
             except: 
                 return None
 
-        results = ""
+        results = []
+        s = ""
         for i in range(0,len(labels_str)): 
             acc = accuracy_per_class(i)
+
             if acc != None:
-                results += "{0} - {1}%\n".format(labels_str[i], round(accuracy_per_class(i) * 100,2))
+                res = { 'label': labels_str[i] }
+                res['acc'] = acc
+                res['classes'] = []
+                s += "{0} - {1}%\n".format(labels_str[i], round(acc * 100,2))
                 classes = most_represented_class_per_class(i)
                 for k in classes[0:10]:
-                    results+= "\t{1}%\t -\t {0}\n".format(k[0], round(k[1]*100, 2))
+                    res['classes'].append({ 'label' : k[0], 'acc' : k[1] })
+                    s += "\t{1}%\t -\t {0}\n".format(k[0], round(k[1]*100, 2))
+                results.append(res)
 
-
-        return  { "results" : results }
+        return  { "results" : results, "text" : s }
 

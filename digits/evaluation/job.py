@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2015, NVIDIA CORPORATION.  All rights reserved.
+# -*- coding: utf-8 -*-
 
 from digits.job import Job
 from . import tasks
@@ -8,7 +8,7 @@ PICKLE_VERSION = 1
 
 class EvaluationJob(Job):
     """
-    A Job that creates a dataset
+    A Job that performs a performance evaluation
     """
 
     def __init__(self, **kwargs):
@@ -17,7 +17,6 @@ class EvaluationJob(Job):
         super(EvaluationJob, self).__init__(**kwargs)
         self.pickver_job_evaluation = PICKLE_VERSION
  
-
 
     def accuracy_tasks(self):
         """Return all the Accuracy Tasks for this job"""
