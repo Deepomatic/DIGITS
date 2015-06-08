@@ -2,23 +2,14 @@
 
 from accuracy import AccuracyTask
 from caffe.proto import caffe_pb2
-from digits import utils, dataset
-from digits.config import config_option
-from digits.status import Status
-from digits.task import Task
-from digits.utils import subclass, override, constants
-from google.protobuf import text_format
-import caffe
+from digits import utils
+from digits.utils import subclass, override
 import digits
 import joblib
-import math
-import numpy as np
 import os
 import os.path
 import re 
-import subprocess
 import sys
-import time
 
 # NOTE: Increment this everytime the pickled object changes
 PICKLE_VERSION = 1
@@ -106,7 +97,7 @@ class CaffeAccuracyTask(AccuracyTask):
     def process_output(self, line):
         from digits.webapp import socketio
 
-        timestamp, level, message = self.preprocess_output_digits(line)
+        _, level, message = self.preprocess_output_digits(line)
         if not message:
             return False
 
@@ -131,7 +122,7 @@ class CaffeAccuracyTask(AccuracyTask):
         match = re.match(r'Done', message)
         if match:
             # Store the accuracy data
-            snapshot_file, snapshot_extension = os.path.splitext(self.snapshot)
+            snapshot_file, _ = os.path.splitext(self.snapshot)
 
             self.probas_data = joblib.load(snapshot_file + "-accuracy-proba.pkl")
             self.labels_data = joblib.load(snapshot_file + "-accuracy-labels.pkl")

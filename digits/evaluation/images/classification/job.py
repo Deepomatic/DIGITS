@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from ..job import ImageEvaluationJob
-from digits import utils
-from digits.dataset import tasks
-from digits.model import tasks
 from digits.utils import subclass, override
-from digits.webapp import app, scheduler
+from digits.webapp import scheduler
 
-import os.path
 
 # NOTE: Increment this everytime the pickled object changes
 PICKLE_VERSION = 1

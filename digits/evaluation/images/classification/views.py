@@ -1,30 +1,17 @@
 # -*- coding: utf-8 -*-
 
-from caffe.proto import caffe_pb2
-from digits import utils
-from digits.config import config_option
 from digits.evaluation import tasks
-from digits.status import Status
 from digits.webapp import app, scheduler
-from flask import render_template, request, redirect, url_for, flash
-from google.protobuf import text_format
+from flask import render_template, request, redirect, url_for
 from job import ImageClassificationEvaluationJob
 
-import digits
-import numpy as np
-import os
-import random
-import re
-import shutil
-import sys
-import tempfile
 
 NAMESPACE = '/evaluations/images/classification'
 
 
 @app.route(NAMESPACE + '/new', methods=['GET'])
 def image_classification_evaluation_new():
-    return render_template('evaluations/images/classification/new.html', form=form)
+    return render_template('evaluations/images/classification/new.html')
 
 
 @app.route(NAMESPACE + '/accuracy', methods=['POST'])

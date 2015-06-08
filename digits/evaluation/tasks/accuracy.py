@@ -1,21 +1,10 @@
 # -*- coding: utf-8 -*-
-from caffe.proto import caffe_pb2
 from collections import Counter 
-from digits import utils, dataset
-from digits.config import config_option
-from digits.dataset import ImageClassificationDatasetJob
-from digits.status import Status
+from digits import dataset
 from digits.task import Task
-from digits.utils import subclass, override, constants
-from google.protobuf import text_format
-import caffe
-import math
+from digits.utils import subclass, constants
 import numpy as np
-import os
 import pandas as pd
-import re
-import subprocess
-import time
 
 # NOTE: Increment this everytime the pickled object changes
 PICKLE_VERSION = 1
@@ -41,7 +30,7 @@ class AccuracyTask(Task):
         Returns the accuracy/recall datas formatted for a C3.js graph
         """
 
-        if self.probas_data == None:
+        if self.probas_data is None:
             return None
 
         def f_threshold(threshold, probas):
@@ -49,7 +38,6 @@ class AccuracyTask(Task):
             max_probs = np.max(probas, axis=1)
             mask_seuil = np.ma.masked_where(max_probs<threshold, max_probs)
  
-            argmax_probs = np.argmax(probas, axis=1)
 
             labels_masked = np.ma.compressed(np.ma.masked_array(self.labels_data, mask_seuil.mask))
             predict_masked = np.ma.compressed(np.ma.masked_array(self.prediction_data, mask_seuil.mask))
@@ -83,7 +71,7 @@ class AccuracyTask(Task):
         Returns the confusion matrix datas formatted in the form of a string
         TODO: return a dictionnary and make the formatting in the template
         """
-        if self.probas_data == None:
+        if self.probas_data is None:
             return None 
 
         train_task = self.job.model_job.train_task()
@@ -115,7 +103,7 @@ class AccuracyTask(Task):
         for i in range(0,len(labels_str)): 
             acc = accuracy_per_class(i)
 
-            if acc != None:
+            if acc is not None:
                 res = { 'label': labels_str[i] }
                 res['acc'] = acc
                 res['classes'] = []

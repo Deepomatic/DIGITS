@@ -1,18 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from random import shuffle
-from urlparse import urlparse
 import argparse
 import joblib, skimage
 import logging
 import numpy as np
 import os
 import pandas as pd
-import re
 import sys
 import time
-import urllib
 
 # Add path for DIGITS package
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -20,7 +16,6 @@ import digits.config
 digits.config.load_config()
 from digits import utils, log
 import caffe
-import requests
 
 logger = logging.getLogger('digits.tools.compute_accuracy')
 
