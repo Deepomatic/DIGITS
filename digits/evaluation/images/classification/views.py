@@ -44,7 +44,7 @@ def image_classification_evaluation_create():
             epoch = int(request.form['snapshot_epoch'])
 
         job = ImageClassificationEvaluationJob( 
-            name=modelJob._name + "-accuracy-evaluation-e" + str(epoch),
+            name=modelJob._name + "-accuracy-evaluation-epoch-" + str(epoch),
             modeljob_id= modelJob.id(),
             model_epoch= epoch
             )
