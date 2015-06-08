@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from collections import Counter 
-from digits import dataset
 from digits.task import Task
 from digits.utils import subclass, constants
 import numpy as np
