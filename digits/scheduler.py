@@ -15,6 +15,7 @@ from . import utils
 from status import Status
 from job import Job
 from dataset import DatasetJob
+from evaluation import EvaluationJob
 from model import ModelJob
 from digits.utils import errors
 from log import logger
@@ -94,6 +95,7 @@ class Scheduler:
         # Keeps track of resource usage
         self.resources = {
                 # TODO: break this into CPU cores, memory usage, IO usage, etc.
+                'compute_accuracy_task_pool': [Resource()],
                 'parse_folder_task_pool': [Resource()],
                 'create_db_task_pool': [Resource(max_value=2)],
                 'gpus': [Resource(identifier=index)
@@ -271,6 +273,20 @@ class Scheduler:
         """a query utility"""
         return sorted(
                 [j for j in self.jobs if isinstance(j, ModelJob) and not j.status.is_running()],
+                cmp=lambda x,y: cmp(y.id(), x.id())
+                )
+
+    def running_evaluation_jobs(self):
+        """a query utility"""
+        return sorted(
+                [j for j in self.jobs if isinstance(j, EvaluationJob) and j.status.is_running()],
+                cmp=lambda x,y: cmp(y.id(), x.id())
+                )
+
+    def completed_evaluation_jobs(self):
+        """a query utility"""
+        return sorted(
+                [j for j in self.jobs if isinstance(j, EvaluationJob) and not j.status.is_running()],
                 cmp=lambda x,y: cmp(y.id(), x.id())
                 )
 
