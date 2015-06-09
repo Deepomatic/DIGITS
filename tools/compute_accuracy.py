@@ -113,7 +113,7 @@ class Classifier(caffe.Net):
 
         return predictions
 
-def compute_accuracy(snapshot, deploy_file, labels_file, mean_file, img_set, width, height, resize_mode, oversample=False):
+def compute_accuracy(snapshot, deploy_file, labels_file, mean_file, img_set, width, height, resize_mode, grayscale=False, oversample=False):
     """
     Evaluate a Net on a set of images, and dump the result in two
     pickle files.

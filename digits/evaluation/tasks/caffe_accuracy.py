@@ -90,6 +90,8 @@ class CaffeAccuracyTask(AccuracyTask):
                 train_task.dataset.resize_mode
             ]
 
+        if train_task.dataset.image_dims[2] != 3:
+            args.append('--grayscale') 
 
         return args
 
