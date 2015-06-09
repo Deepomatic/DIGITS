@@ -16,7 +16,7 @@ class EvaluationJob(Job):
         """
         super(EvaluationJob, self).__init__(**kwargs)
         self.pickver_job_evaluation = PICKLE_VERSION
- 
+
 
     def accuracy_tasks(self):
         """Return all the Accuracy Tasks for this job"""

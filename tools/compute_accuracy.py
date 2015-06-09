@@ -24,7 +24,7 @@ class Classifier(caffe.Net):
     """
     Classifier extends Net for image class prediction
     by scaling, center cropping, or oversampling.
-    It differs from Caffe original class version by 
+    It differs from Caffe original class version by
     taking the last output layer instead of the first (which
     is not always the right output layer, e.g in the case
     of googlenet)
@@ -112,20 +112,20 @@ class Classifier(caffe.Net):
             predictions = predictions.mean(1)
 
         return predictions
- 
 
-def compute_accuracy(snapshot, deploy_file, labels_file, mean_file, img_set, width, height, resize_mode, oversample=False): 
+
+def compute_accuracy(snapshot, deploy_file, labels_file, mean_file, img_set, width, height, resize_mode, oversample=False):
     """
     Evaluate a Net on a set of images, and dump the result in two
-    pickle files. 
+    pickle files.
     Returns True on sucess
 
     Arguments:
-    snapshot -- a Caffe trained model 
+    snapshot -- a Caffe trained model
     deploy_file -- the corresponding deploy file
     labels_file -- the file containing the dataset labels
     mean_file -- the dataset mean file
-    img_set -- the file containing a list of images 
+    img_set -- the file containing a list of images
     resize_mode -- the mode used to resize images
 
     Keyword arguments:
@@ -151,8 +151,8 @@ def compute_accuracy(snapshot, deploy_file, labels_file, mean_file, img_set, wid
     prediction = np.zeros(size, dtype=int)
     labels = np.zeros(size, dtype=int)
     probas = np.zeros([size, num_classes], dtype=float)
- 
-    for i in range(0, size): 
+
+    for i in range(0, size):
         cur_image = img_matrix[0][i]
         input_image = utils.image.load_image(cur_image)
         input_image = utils.image.resize_image(input_image, width, height, resize_mode=resize_mode)
@@ -170,13 +170,13 @@ def compute_accuracy(snapshot, deploy_file, labels_file, mean_file, img_set, wid
     joblib.dump(probas, snapshot_file + "-accuracy-proba.pkl")
     joblib.dump(labels, snapshot_file + "-accuracy-labels.pkl")
     logger.debug("Done")
-  
+
     return True
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Accuracy-Computing tool - DIGITS')
- 
+
     parser.add_argument('snapshot',
             help='The Caffe model snapshot.'
             )
@@ -195,12 +195,12 @@ if __name__ == '__main__':
     parser.add_argument('img_set',
             help='The file representing the set of files to evaluate'
             )
- 
-    parser.add_argument('width',            
+
+    parser.add_argument('width',
             type=int,
             help='images width'
             )
-    parser.add_argument('height',         
+    parser.add_argument('height',
             type=int,
             help='images height'
             )
@@ -213,11 +213,11 @@ if __name__ == '__main__':
     start_time = time.time()
 
     if compute_accuracy(
-        args['snapshot'], 
+        args['snapshot'],
         args['deploy_file'] ,
         args['labels'] ,
-        args['mean_file'], 
-        args['img_set'], 
+        args['mean_file'],
+        args['img_set'],
         args['width'],
         args['height'],
         args['resize_mode']):
