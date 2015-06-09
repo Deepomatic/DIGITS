@@ -76,13 +76,13 @@ def home_json():
         'name': j.name(),
         'id': j.id(),
         'status': j.status.name,
-        } for j in evaluation]
+        } for j in evaluations]
     return jsonify({
         'datasets': datasets,
         'models': models,
         'evaluations': evaluations,
         })
- 
+
 def get_job_list(cls, running):
     return sorted(
             [j for j in scheduler.jobs if isinstance(j, cls) and j.status.is_running() == running],
