@@ -32,7 +32,7 @@ class ImageClassificationEvaluationJob(ImageEvaluationJob):
 
         task = self.model_job.train_task()
 
-        snapshot_filename = None 
+        snapshot_filename = None
         if self.model_epoch == -1 and len(task.snapshots):
             self.model_epoch = task.snapshots[-1][1]
             snapshot_filename = task.snapshots[-1][0]
@@ -50,4 +50,3 @@ class ImageClassificationEvaluationJob(ImageEvaluationJob):
     @override
     def job_type(self):
         return 'Image Classification Model Evaluation'
- 

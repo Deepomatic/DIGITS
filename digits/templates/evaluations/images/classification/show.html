@@ -1,14 +1,25 @@
 {% extends "job.html" %}
 
+<<<<<<< HEAD
  
+=======
+
+>>>>>>> 209ed501647fbad96d757aa0eff6bdacb4f71381
 {% macro print_accuracy_task(task) %}
 <div class="panel-heading">
     <h2>Performances on {{ task.db_task.db_name }}</h2>
 </div>
+<<<<<<< HEAD
 <div class="panel-body">  
     <h3>Accuracy / recall curve</h3>
     <div id="avgacc-graph-{{task.html_id()}}" 
         class="avgacc-graph" 
+=======
+<div class="panel-body">
+    <h3>Accuracy / recall curve</h3>
+    <div id="avgacc-graph-{{task.html_id()}}"
+        class="avgacc-graph"
+>>>>>>> 209ed501647fbad96d757aa0eff6bdacb4f71381
         style="height:300px;width:100%;background:white;display:none;">
     </div>
     {% if task.avg_accuracy_graph_data() %}
@@ -31,8 +42,13 @@
 {% endmacro %}
 
 
+<<<<<<< HEAD
  
 {% block job_content %} 
+=======
+
+{% block job_content %}
+>>>>>>> 209ed501647fbad96d757aa0eff6bdacb4f71381
 
 <script>
 function drawConfusionMatrix(data, taskId) {
@@ -47,15 +63,25 @@ function drawConfusionMatrix(data, taskId) {
         curDiv.append('<div class="col-sm-4"><h4>' + o.label + ' - ' + (o.acc*100).toFixed(2) + '%</h4></div>');
         $("#confusion-matrix-"+taskId).append(curDiv);
         o.classes.forEach(function (c) {
+<<<<<<< HEAD
                 $("#confusion-matrix-"+taskId).append('<div class="row">' + 
                     '<div class="col-sm-2 text-right">' + (c.acc*100).toFixed(2) + '% </div>' + 
                     '<div class="col-sm-1 text-center">&nbsp; - &nbsp;</div>' + 
+=======
+                $("#confusion-matrix-"+taskId).append('<div class="row">' +
+                    '<div class="col-sm-2 text-right">' + (c.acc*100).toFixed(2) + '% </div>' +
+                    '<div class="col-sm-1 text-center">&nbsp; - &nbsp;</div>' +
+>>>>>>> 209ed501647fbad96d757aa0eff6bdacb4f71381
                     '<div class="col-sm-2 text-left">' + c.label + '</div>' +
                     '</div>'
                     );
         });
         $("#confusion-matrix-"+taskId).append('<br/>');
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> 209ed501647fbad96d757aa0eff6bdacb4f71381
     });
 }
 
@@ -64,7 +90,11 @@ function drawAverageAccuracyGraph(data, taskId) {
 
     c3.generate({
         "bindto": '#avgacc-graph-'+taskId,
+<<<<<<< HEAD
         "data": data, 
+=======
+        "data": data,
+>>>>>>> 209ed501647fbad96d757aa0eff6bdacb4f71381
         "axis": {
             "x": {
                 "show": true,
@@ -79,7 +109,11 @@ function drawAverageAccuracyGraph(data, taskId) {
             },
             "y": {
                 "show": true,
+<<<<<<< HEAD
                 "label": { 
+=======
+                "label": {
+>>>>>>> 209ed501647fbad96d757aa0eff6bdacb4f71381
                   "text": 'Accuracy (%)',
                   "position": 'outer-middle'
                 },
@@ -90,7 +124,11 @@ function drawAverageAccuracyGraph(data, taskId) {
             },
             "y2": {
                 "show": true,
+<<<<<<< HEAD
                 "label": { 
+=======
+                "label": {
+>>>>>>> 209ed501647fbad96d757aa0eff6bdacb4f71381
                   "text": 'Recall (%)',
                   "position": 'outer-middle'
                 },
@@ -100,7 +138,11 @@ function drawAverageAccuracyGraph(data, taskId) {
             }
         }
      });
+<<<<<<< HEAD
  
+=======
+
+>>>>>>> 209ed501647fbad96d757aa0eff6bdacb4f71381
 }
 
 </script>
@@ -139,7 +181,11 @@ function drawAverageAccuracyGraph(data, taskId) {
     </div>
     {% endif %}
 
+<<<<<<< HEAD
   
+=======
+
+>>>>>>> 209ed501647fbad96d757aa0eff6bdacb4f71381
     <div class="row">
         <div class="col-sm-12">
             <div id="{{task.html_id()}}" class="panel panel-default">
