@@ -76,7 +76,11 @@ def home_json():
         'name': j.name(),
         'id': j.id(),
         'status': j.status.name,
+<<<<<<< HEAD
         } for j in evaluation]
+=======
+        } for j in evaluations]
+>>>>>>> 209ed501647fbad96d757aa0eff6bdacb4f71381
     return jsonify({
         'datasets': datasets,
         'models': models,

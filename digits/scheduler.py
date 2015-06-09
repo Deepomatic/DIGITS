@@ -164,6 +164,11 @@ class Scheduler:
                         else:
                             print 'Caught %s while loading job "%s"' % (type(e).__name__, job.id())
 
+        # add EvaluationJobs
+        for job in loaded_jobs:
+            if isinstance(job, EvaluationJob):
+                self.jobs.append(job)
+
         if failed > 0 and self.verbose:
             print 'WARNING:', failed, 'jobs failed to load.'
 

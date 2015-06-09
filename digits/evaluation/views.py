@@ -24,4 +24,3 @@ def evaluations_show(job_id):
         return evaluation_images.classification.views.show(job)
     else:
         abort(404)
- 

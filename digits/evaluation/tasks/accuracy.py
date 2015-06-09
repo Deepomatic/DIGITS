@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from collections import Counter 
+from collections import Counter
 from digits.task import Task
 from digits.utils import subclass, constants
 import numpy as np
@@ -14,8 +14,8 @@ class AccuracyTask(Task):
     Defines required methods for child accuracy classes
     """
 
-    def __init__(self, **kwargs): 
-        super(AccuracyTask, self).__init__(**kwargs) 
+    def __init__(self, **kwargs):
+        super(AccuracyTask, self).__init__(**kwargs)
 
     def __getstate__(self):
         state = super(AccuracyTask, self).__getstate__()
@@ -23,7 +23,7 @@ class AccuracyTask(Task):
 
     def __setstate__(self, state):
         super(AccuracyTask, self).__setstate__(state)
- 
+
     def avg_accuracy_graph_data(self):
         """
         Returns the accuracy/recall datas formatted for a C3.js graph
@@ -38,11 +38,8 @@ class AccuracyTask(Task):
             N = len(probas)
             max_probs = np.max(probas, axis=1)
             mask_threshold = np.ma.masked_where(max_probs<threshold, max_probs)
- 
-
             labels_masked = np.ma.compressed(np.ma.masked_array(self.labels_data, mask_threshold.mask))
             predict_masked = np.ma.compressed(np.ma.masked_array(self.prediction_data, mask_threshold.mask))
-
             N_threshold = predict_masked.shape[0]/float(N)
             acc = np.mean(labels_masked==predict_masked)
             return acc, N_threshold
@@ -53,17 +50,17 @@ class AccuracyTask(Task):
 
         max_proba = np.max(self.probas_data)
 
-        for i in range(20): 
+        for i in range(20):
             acc, num = f_threshold(max_proba * i / 20.0, self.probas_data)
             t += [max_proba * i / 20.0]
-            accuracy += [acc] 
+            accuracy += [acc]
             response += [num]
-        return  {        
+        return  {
             "x": "Threshold",
             "columns": [ t, accuracy, response ],
             "axes": {
-                'Recall': 'y2' 
-            } 
+                'Recall': 'y2'
+            }
         }
 
 
@@ -73,7 +70,7 @@ class AccuracyTask(Task):
         TODO: return a dictionnary and make the formatting in the template
         """
         if self.probas_data is None:
-            return None 
+            return None
 
         train_task = self.job.model_job.train_task()
         dataset_train_task = train_task.dataset.train_db_task()
@@ -81,27 +78,27 @@ class AccuracyTask(Task):
         labels_str = pd.read_csv(dataset_train_task.path(dataset_labels),header=None,sep="", engine='python')[0]
 
         def accuracy_per_class(class_index):
-            label_flat = self.labels_data.tolist()           
-            try: 
+            label_flat = self.labels_data.tolist()
+            try:
                 start = label_flat.index(class_index)
-                stop = (len(label_flat) - 1) - label_flat[::-1].index(class_index) 
+                stop = (len(label_flat) - 1) - label_flat[::-1].index(class_index)
                 return np.mean(self.prediction_data[start:stop+1]==self.labels_data[start:stop+1])
             except:
                 return None
 
         def most_represented_class_per_class(class_index):
             label_flat = self.labels_data.tolist()
-            try: 
+            try:
                 start = label_flat.index(class_index)
-                stop = (len(label_flat) - 1) - label_flat[::-1].index(class_index) 
+                stop = (len(label_flat) - 1) - label_flat[::-1].index(class_index)
                 c = Counter(self.prediction_data[start:stop+1])
                 return map(lambda x:(labels_str[x[0]], x[1]/float(stop-start+1)),c.most_common())
-            except: 
+            except:
                 return None
 
         results = []
         s = ""
-        for i in range(0,len(labels_str)): 
+        for i in range(0,len(labels_str)):
             acc = accuracy_per_class(i)
 
             if acc is not None:

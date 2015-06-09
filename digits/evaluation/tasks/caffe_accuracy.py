@@ -8,7 +8,7 @@ import digits
 import joblib
 import os
 import os.path
-import re 
+import re
 import sys
 
 # NOTE: Increment this everytime the pickled object changes
@@ -23,7 +23,7 @@ class CaffeAccuracyTask(AccuracyTask):
     def __init__(self, job, snapshot, db_task, **kwargs):
         """
         Arguments:
-        job -- the job 
+        job -- the job
         snapshot -- the snapshot file of the trained net
         db_task -- the dataset db on which we evaluate the net
 
@@ -37,7 +37,7 @@ class CaffeAccuracyTask(AccuracyTask):
         self.snapshot = snapshot
         self.probas_data = None
         self.db_task = db_task
- 
+
 
     def __getstate__(self):
         state = super(CaffeAccuracyTask, self).__getstate__()
@@ -47,7 +47,7 @@ class CaffeAccuracyTask(AccuracyTask):
         super(CaffeAccuracyTask, self).__setstate__(state)
 
     @override
-    def name(self): 
+    def name(self):
         return 'Compute performance on '+self.db_task.db_name
 
     @override
@@ -70,10 +70,10 @@ class CaffeAccuracyTask(AccuracyTask):
         dataset_mean_file = dataset_train_task.mean_file
         dataset_val_file = dataset_val_task.input_file
 
-        args = [sys.executable, 
+        args = [sys.executable,
             os.path.join(os.path.dirname(os.path.dirname(digits.__file__)), 'tools', 'compute_accuracy.py'),
                 # Caffe model path
-                self.snapshot, 
+                self.snapshot,
                 # Deploy file
                 train_task.path(deploy_file),
                 # Labels
@@ -88,9 +88,8 @@ class CaffeAccuracyTask(AccuracyTask):
                 train_task.dataset.image_dims[0],
                 # Resize mode
                 train_task.dataset.resize_mode
-            ]            
-        if train_task.dataset.image_dims[2] != 3:
-            args.append('--grayscale') 
+            ]
+
 
         return args
 
@@ -145,7 +144,7 @@ class CaffeAccuracyTask(AccuracyTask):
 
             self.logger.debug(self.probas_data.shape)
             return True
- 
+
 
         if level == 'warning':
             self.logger.warning('%s: %s' % (self.name(), message))
