@@ -28,7 +28,7 @@ def image_classification_evaluation_create():
         # We retrieve the selected snapshot from the epoch and the train task
         epoch = None
         if 'snapshot_epoch' in request.form:
-            epoch = int(request.form['snapshot_epoch'])
+            epoch = float(request.form['snapshot_epoch'])
 
         job = ImageClassificationEvaluationJob(
             name=modelJob._name + "-accuracy-evaluation-epoch-" + str(epoch),
