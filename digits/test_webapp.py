@@ -804,6 +804,25 @@ class TestCreatedModel(WebappBaseTest):
                 method='previous', **options)
         self.abort_model(job_id)
 
+    def test_evaluation(self):
+        """created model - evaluate"""
+        url = '/evaluations/images/classification/accuracy?job_id=%s' % self.model_id
+        rv = self.app.post(url)
+
+        # expect a redirect
+        if not 300 <= rv.status_code <= 310:
+            s = BeautifulSoup(rv.data)
+            div = s.select('div.alert-danger')
+            if div:
+                raise RuntimeError(div[0])
+            else:
+                raise RuntimeError('Failed to create evaluation')
+
+        job_id = self.job_id_from_response(rv)
+
+        assert self.job_wait_completion(job_id) == 'Done', 'evaluation creation failed'
+
+
 class TestDatasetModelInteractions(WebappBaseTest):
     """
     Test the interactions between datasets and models

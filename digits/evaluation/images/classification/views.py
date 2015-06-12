@@ -29,7 +29,7 @@ def image_classification_evaluation_create():
     job = None
     try:
         # We retrieve the selected snapshot from the epoch and the train task
-        epoch = None
+        epoch = -1
         if 'snapshot_epoch' in flask.request.form:
             epoch = float(flask.request.form['snapshot_epoch'])
 
