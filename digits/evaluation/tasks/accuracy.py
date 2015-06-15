@@ -32,8 +32,6 @@ class AccuracyTask(Task):
         if self.probas_data is None:
             return None
 
-        print self.probas_data
-
         def f_threshold(threshold, probas):
             N = len(probas)
             max_probs = np.max(probas, axis=1)
