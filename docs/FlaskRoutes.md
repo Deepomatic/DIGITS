@@ -1,6 +1,6 @@
 # Flask Routes
 
-*Generated Jun 10, 2015*
+*Generated Jun 15, 2015*
 
 Documentation on the various routes used internally for the web application.
 
@@ -12,6 +12,7 @@ These are all technically RESTful, but they return HTML pages. To get JSON respo
 * [Jobs](#jobs)
 * [Datasets](#datasets)
 * [Models](#models)
+* [Evaluations](#evaluations)
 * [Util](#util)
 
 ## Home
@@ -36,7 +37,7 @@ These are all technically RESTful, but they return HTML pages. To get JSON respo
 
 Methods: **GET**
 
-Location: [`digits/views.py@21`](../digits/views.py#L21)
+Location: [`digits/views.py@22`](../digits/views.py#L22)
 
 ## Jobs
 
@@ -48,7 +49,7 @@ Methods: **DELETE**
 
 Arguments: `job_id`
 
-Location: [`digits/views.py@137`](../digits/views.py#L137)
+Location: [`digits/views.py@148`](../digits/views.py#L148)
 
 ### `/datasets/<job_id>/abort`
 
@@ -58,7 +59,7 @@ Methods: **POST**
 
 Arguments: `job_id`
 
-Location: [`digits/views.py@157`](../digits/views.py#L157)
+Location: [`digits/views.py@169`](../digits/views.py#L169)
 
 ### `/datasets/<job_id>/status`
 
@@ -68,7 +69,37 @@ Methods: **GET**
 
 Arguments: `job_id`
 
-Location: [`digits/views.py@118`](../digits/views.py#L118)
+Location: [`digits/views.py@128`](../digits/views.py#L128)
+
+### `/evaluations/<job_id>`
+
+> Deletes a job
+
+Methods: **DELETE**
+
+Arguments: `job_id`
+
+Location: [`digits/views.py@148`](../digits/views.py#L148)
+
+### `/evaluations/<job_id>/abort`
+
+> Aborts a running job
+
+Methods: **POST**
+
+Arguments: `job_id`
+
+Location: [`digits/views.py@169`](../digits/views.py#L169)
+
+### `/evaluations/<job_id>/status`
+
+> Returns a JSON objecting representing the status of a job
+
+Methods: **GET**
+
+Arguments: `job_id`
+
+Location: [`digits/views.py@128`](../digits/views.py#L128)
 
 ### `/jobs/<job_id>`
 
@@ -78,7 +109,7 @@ Methods: **GET**
 
 Arguments: `job_id`
 
-Location: [`digits/views.py@85`](../digits/views.py#L85)
+Location: [`digits/views.py@92`](../digits/views.py#L92)
 
 ### `/jobs/<job_id>`
 
@@ -88,7 +119,7 @@ Methods: **PUT**
 
 Arguments: `job_id`
 
-Location: [`digits/views.py@102`](../digits/views.py#L102)
+Location: [`digits/views.py@111`](../digits/views.py#L111)
 
 ### `/jobs/<job_id>`
 
@@ -98,7 +129,7 @@ Methods: **DELETE**
 
 Arguments: `job_id`
 
-Location: [`digits/views.py@137`](../digits/views.py#L137)
+Location: [`digits/views.py@148`](../digits/views.py#L148)
 
 ### `/jobs/<job_id>/abort`
 
@@ -108,7 +139,7 @@ Methods: **POST**
 
 Arguments: `job_id`
 
-Location: [`digits/views.py@157`](../digits/views.py#L157)
+Location: [`digits/views.py@169`](../digits/views.py#L169)
 
 ### `/jobs/<job_id>/status`
 
@@ -118,7 +149,7 @@ Methods: **GET**
 
 Arguments: `job_id`
 
-Location: [`digits/views.py@118`](../digits/views.py#L118)
+Location: [`digits/views.py@128`](../digits/views.py#L128)
 
 ### `/models/<job_id>`
 
@@ -128,7 +159,7 @@ Methods: **DELETE**
 
 Arguments: `job_id`
 
-Location: [`digits/views.py@137`](../digits/views.py#L137)
+Location: [`digits/views.py@148`](../digits/views.py#L148)
 
 ### `/models/<job_id>/abort`
 
@@ -138,7 +169,7 @@ Methods: **POST**
 
 Arguments: `job_id`
 
-Location: [`digits/views.py@157`](../digits/views.py#L157)
+Location: [`digits/views.py@169`](../digits/views.py#L169)
 
 ### `/models/<job_id>/status`
 
@@ -148,7 +179,7 @@ Methods: **GET**
 
 Arguments: `job_id`
 
-Location: [`digits/views.py@118`](../digits/views.py#L118)
+Location: [`digits/views.py@128`](../digits/views.py#L128)
 
 ## Datasets
 
@@ -326,6 +357,18 @@ Methods: **POST**
 
 Location: [`digits/model/views.py@86`](../digits/model/views.py#L86)
 
+## Evaluations
+
+### `/evaluations/<job_id>`
+
+> Show an EvaluationJob
+
+Methods: **GET**
+
+Arguments: `job_id`
+
+Location: [`digits/evaluation/views.py@13`](../digits/evaluation/views.py#L13)
+
 ## Util
 
 ### `/files/<path:path>`
@@ -342,5 +385,5 @@ Methods: **GET**
 
 Arguments: `path`
 
-Location: [`digits/views.py@201`](../digits/views.py#L201)
+Location: [`digits/views.py@213`](../digits/views.py#L213)
 
