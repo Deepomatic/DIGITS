@@ -14,6 +14,7 @@ import time
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import digits.config
 digits.config.load_config()
+from digits.config import config_value
 from digits import utils, log
 import caffe
 
@@ -139,7 +140,10 @@ def compute_accuracy(snapshot, deploy_file, labels_file, mean_file, img_set, wid
     mean = np.array(caffe.io.blobproto_to_array(mean_blob))[0].mean(1).mean(1)
 
     # Loading the classifier
-    caffe.set_mode_gpu()
+    if config_value('caffe_root')['cuda_enabled'] and\
+            config_value('gpu_list'):
+        caffe.set_mode_gpu()
+
     if grayscale:
         net = Classifier(deploy_file, snapshot,
                        mean=mean,
