@@ -5,7 +5,7 @@ from caffe.proto import caffe_pb2
 from digits import utils
 from digits.utils import subclass, override
 import digits
-import joblib
+import pickle
 import os
 import os.path
 import re
@@ -126,8 +126,8 @@ class CaffeAccuracyTask(AccuracyTask):
             # Store the accuracy data
             snapshot_file, _ = os.path.splitext(self.snapshot)
 
-            self.probas_data = joblib.load(snapshot_file + "-accuracy-proba.pkl")
-            self.labels_data = joblib.load(snapshot_file + "-accuracy-labels.pkl")
+            self.probas_data = pickle.load(open(snapshot_file + "-accuracy-proba.pkl", "rb"))
+            self.labels_data = pickle.load(open(snapshot_file + "-accuracy-labels.pkl", "rb"))
             self.prediction_data = self.probas_data.argmax(axis=1)
 
             # Send the accuracy/recall curve and confusion matrix datas

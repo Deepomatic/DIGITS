@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-import joblib, skimage
+import pickle, skimage
 import logging
 import numpy as np
 import os
@@ -177,8 +177,8 @@ def compute_accuracy(snapshot, deploy_file, labels_file, mean_file, img_set, wid
     snapshot_file, snapshot_extension = os.path.splitext(snapshot)
 
     # Dumping the result
-    joblib.dump(probas, snapshot_file + "-accuracy-proba.pkl")
-    joblib.dump(labels, snapshot_file + "-accuracy-labels.pkl")
+    pickle.dump(probas, open(snapshot_file + "-accuracy-proba.pkl", "wb"))
+    pickle.dump(labels, open(snapshot_file + "-accuracy-labels.pkl", "wb"))
     logger.debug("Done")
     return True
 
