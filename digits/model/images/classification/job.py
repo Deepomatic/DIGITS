@@ -49,3 +49,9 @@ class ImageClassificationModelJob(ImageModelJob):
                     os.path.basename(snapshot_filename)),
                 ]
 
+    @override
+    def parent_jobs(self):
+        return [self.train_task().dataset]
+
+
+

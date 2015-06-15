@@ -2,8 +2,6 @@
 
 from ..job import ImageEvaluationJob
 from digits.utils import subclass, override
-from digits.webapp import scheduler
-
 
 # NOTE: Increment this everytime the pickled object changes
 PICKLE_VERSION = 1
@@ -14,10 +12,10 @@ class ImageClassificationEvaluationJob(ImageEvaluationJob):
     A Job that creates a performance analysis for a classification network
     """
 
-    def __init__(self, modeljob_id, model_epoch=None, **kwargs):
+    def __init__(self, model_id, model_epoch, **kwargs):
         """
         Arguments:
-        modeljob_id -- the classification model job id
+        model_id    -- the classification model job id
         model_epoch -- the epoch corresponding to the snapshot we want to evaluate
 
         Keyword arguments:
@@ -25,8 +23,10 @@ class ImageClassificationEvaluationJob(ImageEvaluationJob):
 
         super(ImageClassificationEvaluationJob, self).__init__(**kwargs)
 
-        self.model_job = scheduler.get_job(modeljob_id)
         self.model_epoch = model_epoch
+        self.model_id = model_id
+        self.load_model()
+
         self.pickver_job_evaluation_image_classification = PICKLE_VERSION
         self.labels_file = None
 
@@ -47,15 +47,22 @@ class ImageClassificationEvaluationJob(ImageEvaluationJob):
         self.snapshot_filename = snapshot_filename
 
 
+    def load_model(self):
+        """
+        Load the ModelJob corresponding to self.model_id
+        """
+        from digits.webapp import scheduler
+        job = scheduler.get_job(self.model_id)
+        assert job is not None, 'Cannot find model'
+        self.model_job = job
+
     @override
     def job_type(self):
         return 'Image Classification Model Evaluation'
 
 
     @override
-    def dependent_jobs(self):
+    def parent_jobs(self):
         return [self.model_job]
-
-
 
 

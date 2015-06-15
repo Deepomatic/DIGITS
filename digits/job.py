@@ -182,3 +182,12 @@ class Job(StatusCls):
         except Exception as e:
             print 'Caught %s while saving job: %s' % (type(e).__name__, e)
 
+
+    def parent_jobs(self):
+        """
+        Returns the list of the jobs on which the job
+        depends
+        """
+        raise NotImplementedError('Implement me!')
+
+        

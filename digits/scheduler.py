@@ -167,7 +167,18 @@ class Scheduler:
         # add EvaluationJobs
         for job in loaded_jobs:
             if isinstance(job, EvaluationJob):
-                self.jobs.append(job)
+                try:
+                    # load the ModelJob
+                    job.load_model()
+                    self.jobs.append(job)
+                except Exception as e:
+                    failed += 1
+                    if self.verbose:
+                        if str(e):
+                            print 'Caught %s while loading job "%s":' % (type(e).__name__, job.id())
+                            print '\t%s' % e
+                        else:
+                            print 'Caught %s while loading job "%s"' % (type(e).__name__, job.id())
 
         if failed > 0 and self.verbose:
             print 'WARNING:', failed, 'jobs failed to load.'
@@ -195,6 +206,20 @@ class Scheduler:
             if j.id() == job_id:
                 return j
         return None
+
+    def get_related_jobs(self, job):
+        """
+        Look through self.jobs to try to find the Jobs
+        whose parent contains job
+        """
+        related_jobs = []
+        for j in self.jobs:
+            try:
+                if job in j.parent_jobs():
+                    related_jobs.append(j)
+            except NotImplementedError: 
+                pass
+        return related_jobs
 
     def abort_job(self, job_id):
         """
@@ -233,7 +258,7 @@ class Scheduler:
                 if isinstance(job, ModelJob):
                     # check for dependencies
                     for j in self.jobs:
-                        if isinstance(j, EvaluationJob) and job.id() in map(lambda x : x.id(), j.dependent_jobs()):
+                        if isinstance(j, EvaluationJob) and job.id() in map(lambda x : x.id(), j.parent_jobs()):
                             logger.error('Cannot delete "%s" (%s) because "%s" (%s) depends on it.' % (job.name(), job.id(), j.name(), j.id()))
                             dependent_jobs.append(j.name())
 
