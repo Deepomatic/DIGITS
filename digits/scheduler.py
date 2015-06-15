@@ -229,6 +229,14 @@ class Scheduler:
                         if isinstance(j, ModelJob) and j.dataset_id == job.id():
                             logger.error('Cannot delete "%s" (%s) because "%s" (%s) depends on it.' % (job.name(), job.id(), j.name(), j.id()))
                             dependent_jobs.append(j.name())
+
+                if isinstance(job, ModelJob):
+                    # check for dependencies
+                    for j in self.jobs:
+                        if isinstance(j, EvaluationJob) and job.id() in map(lambda x : x.id(), j.dependent_jobs()):
+                            logger.error('Cannot delete "%s" (%s) because "%s" (%s) depends on it.' % (job.name(), job.id(), j.name(), j.id()))
+                            dependent_jobs.append(j.name())
+
                 if len(dependent_jobs)>0:
                     error_message = 'Cannot delete "%s" because %d model%s depend%s on it: %s' % (
                             job.name(),

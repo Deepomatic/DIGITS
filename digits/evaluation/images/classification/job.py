@@ -50,3 +50,12 @@ class ImageClassificationEvaluationJob(ImageEvaluationJob):
     @override
     def job_type(self):
         return 'Image Classification Model Evaluation'
+
+
+    @override
+    def dependent_jobs(self):
+        return [self.model_job]
+
+
+
+
