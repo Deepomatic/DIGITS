@@ -17,11 +17,3 @@ class ImageEvaluationJob(EvaluationJob):
 
         super(ImageEvaluationJob, self).__init__(**kwargs)
         self.pickver_job_evaluation_image = PICKLE_VERSION
-
-
-    def dependent_jobs(self):
-        """
-        Returns the list of the jobs on which the EvaluationJob
-        depends
-        """
-        raise NotImplementedError('Implement me!')

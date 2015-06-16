@@ -35,7 +35,7 @@ def image_classification_evaluation_create():
 
         job = ImageClassificationEvaluationJob(
             name=modelJob._name + "-accuracy-evaluation-epoch-" + str(epoch),
-            modeljob_id= modelJob.id(),
+            model_id= modelJob.id(),
             model_epoch= epoch
             )
 
@@ -73,9 +73,9 @@ def image_classification_evaluation_create():
         raise
 
 
-def show(job):
+def show(job, related_jobs=None):
     """
     Called from digits.evaluation.views.evaluations_show()
     """
-    return flask.render_template('evaluations/images/classification/show.html', job=job)
+    return flask.render_template('evaluations/images/classification/show.html', job=job, related_jobs=related_jobs)
 
