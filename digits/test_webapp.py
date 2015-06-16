@@ -27,6 +27,7 @@ DUMMY_IMAGE_COUNT = 10 # per category
 # TODO: these might be too short on a slow system
 TIMEOUT_DATASET = 10
 TIMEOUT_MODEL = 10
+TIMEOUT_EVALUATION = 10
 
 def create_dummy_dataset(data_path):
     """
@@ -105,6 +106,7 @@ class WebappBaseTest(object):
         cls.app = webapp.app.test_client()
         cls.created_datasets = []
         cls.created_models = []
+        cls.created_evaluations = []
 
     @classmethod
     def tearDownClass(cls):
@@ -113,6 +115,8 @@ class WebappBaseTest(object):
             cls.delete_model(job_id)
         for job_id in cls.created_datasets:
             cls.delete_dataset(job_id)
+        for job_id in cls.created_evaluations:
+            cls.delete_evaluation(job_id)
         # Remove the dummy data
         shutil.rmtree(cls.data_path)
 
@@ -240,6 +244,66 @@ class WebappBaseTest(object):
         return cls.create_model(**defaults)
 
     @classmethod
+    def create_evaluation(cls, **data):
+        """
+        Create an evaluation 
+        Returns the job_id
+        Raise RuntimeError if job fails to create
+
+        Arguments:
+        data -- data to be sent with POST request
+        """
+        if 'snapshot_epoch' not in data:
+            data['snapshot_epoch'] = 1
+
+        request_json = data.pop('json', False)
+        url = '/evaluations/images/classification?job_id=%s' % data['model_id']
+
+        if request_json:
+            url += '.json'
+
+        rv = cls.app.post(url, data=data)
+
+        if request_json:
+            if rv.status_code != 200:
+                print json.loads(rv.data)
+                raise RuntimeError('Evaluation creation failed with %s' % rv.status_code)
+            return json.loads(rv.data)['id']
+
+        # expect a redirect
+        if not 300 <= rv.status_code <= 310:
+            s = BeautifulSoup(rv.data)
+            div = s.select('div.alert-danger')
+            if div:
+                raise RuntimeError(div[0])
+            else:
+                raise RuntimeError('Failed to create evaluation')
+
+        job_id = cls.job_id_from_response(rv)
+        assert cls.evaluation_exists(job_id), 'evaluation not found after successful creation'
+
+        cls.created_evaluations.append(job_id)
+        return job_id
+
+    @classmethod
+    def create_quick_evaluation(cls, model_id, **kwargs):
+        """
+        Creates a simple evaluation quickly
+        Returns the job_id
+
+        Arguments:
+        model_id -- id for the model
+
+        Keyword arguments:
+        kwargs -- any overrides you want to pass into the POST data
+        """
+        defaults = {
+                'model_id': model_id
+                }
+        defaults.update(kwargs)
+        return cls.create_evaluation(**defaults)
+
+    @classmethod
     def job_id_from_response(cls, rv):
         """
         Extract the job_id from an HTTP response
@@ -255,6 +319,10 @@ class WebappBaseTest(object):
     @classmethod
     def model_exists(cls, job_id):
         return cls.job_exists(job_id, 'models')
+
+    @classmethod
+    def evaluation_exists(cls, job_id):
+        return cls.job_exists(job_id, 'evaluations')
 
     @classmethod
     def job_exists(cls, job_id, job_type='jobs'):
@@ -275,6 +343,10 @@ class WebappBaseTest(object):
         return cls.job_status(job_id, 'models')
 
     @classmethod
+    def evaluation_status(cls, job_id):
+        return cls.job_status(job_id, 'evaluations')
+
+    @classmethod
     def job_status(cls, job_id, job_type='jobs'):
         """
         Get the status of a job
@@ -292,6 +364,10 @@ class WebappBaseTest(object):
     @classmethod
     def abort_model(cls, job_id):
         return cls.abort_job(job_id, job_type='models')
+
+    @classmethod
+    def abort_evaluation(cls, job_id):
+        return cls.abort_job(job_id, job_type='evaluations')
 
     @classmethod
     def abort_job(cls, job_id, job_type='jobs'):
@@ -314,6 +390,13 @@ class WebappBaseTest(object):
         kwargs['job_type'] = 'models'
         if 'timeout' not in kwargs:
             kwargs['timeout'] = TIMEOUT_MODEL
+        return cls.job_wait_completion(job_id, **kwargs)
+
+    @classmethod
+    def evaluation_wait_completion(cls, job_id, **kwargs):
+        kwargs['job_type'] = 'evaluations'
+        if 'timeout' not in kwargs:
+            kwargs['timeout'] = TIMEOUT_EVALUATION
         return cls.job_wait_completion(job_id, **kwargs)
 
     @classmethod
@@ -347,6 +430,10 @@ class WebappBaseTest(object):
         return cls.delete_job(job_id, job_type='models')
 
     @classmethod
+    def delete_evaluation(cls, job_id):
+        return cls.delete_job(job_id, job_type='evaluations')
+
+    @classmethod
     def delete_job(cls, job_id, job_type='jobs'):
         """
         Delete a job
@@ -367,7 +454,7 @@ class TestWebapp(WebappBaseTest):
         """home page"""
         rv = self.app.get('/')
         assert rv.status_code == 200, 'page load failed with %s' % rv.status_code
-        for h in ['Home', 'Datasets', 'Models']:
+        for h in ['Home', 'Datasets', 'Models', 'evaluations']:
             assert h in rv.data, 'unexpected page format'
 
     def test_invalid_page(self):
@@ -382,6 +469,10 @@ class TestWebapp(WebappBaseTest):
     def test_invalid_model(self):
         """invalid model"""
         assert not self.model_exists('foo'), "model shouldn't exist"
+
+    def test_invalid_evaluation(self):
+        """invalid evaluation"""
+        assert not self.evaluation_exists('foo'), "evaluation shouldn't exist"
 
 
 class TestDatasetCreation(WebappBaseTest):
@@ -806,7 +897,7 @@ class TestCreatedModel(WebappBaseTest):
 
     def test_evaluation(self):
         """created model - evaluate"""
-        url = '/evaluations/images/classification/accuracy?job_id=%s' % self.model_id
+        url = '/evaluations/images/classification?job_id=%s' % self.model_id
         rv = self.app.post(url)
 
         # expect a redirect
@@ -825,7 +916,7 @@ class TestCreatedModel(WebappBaseTest):
 
 class TestDatasetModelInteractions(WebappBaseTest):
     """
-    Test the interactions between datasets and models
+    Test the interactions between datasets and models, models and evaluations
     """
 
     def test_model_with_deleted_database(self):
@@ -839,6 +930,21 @@ class TestDatasetModelInteractions(WebappBaseTest):
         except RuntimeError:
             return
         assert False, 'Should have failed'
+
+    # An evaluation should not be created while using a deleted model.
+    def test_evaluation_with_deleted_model(self):
+        """model on deleted dataset"""
+        dataset_id = self.create_quick_dataset()
+        model_id = self.create_quick_model(dataset_id)
+        assert self.delete_model(model_id) == 200, 'delete failed'
+        assert not self.model_exists(model_id), 'model exists after delete'
+
+        try:
+            evaluation_id = self.create_quick_evaluation(model_id)
+        except RuntimeError:
+            return
+        assert False, 'Should have failed'
+
 
     def test_model_on_running_dataset(self):
         """model on running dataset"""
@@ -860,4 +966,29 @@ class TestDatasetModelInteractions(WebappBaseTest):
         assert self.dataset_wait_completion(dataset_id) == 'Done', 'dataset creation failed'
         assert self.delete_dataset(dataset_id) == 403, 'dataset deletion should not have succeeded'
         self.abort_model(model_id)
+
+    # A model should not be deleted while an evaluation using it is running.
+    def test_evaluation_create_model_delete(self):
+        """delete model with dependent evaluation"""
+        dataset_id = self.create_quick_dataset()
+        model_id = self.create_quick_model(dataset_id, train_epochs=1, snapshot_interval=0.5)
+        assert self.dataset_wait_completion(dataset_id) == 'Done', 'dataset creation failed'
+        assert self.model_wait_completion(model_id) == 'Done', 'model creation failed'
+        evaluation_id = self.create_quick_evaluation(model_id)
+
+        assert self.delete_model(model_id) == 403, 'model deletion should not have succeeded'
+        self.abort_evaluation(evaluation_id)
+
+    # An evaluation should not be created if the corresponding epoch does not exist
+    def test_evaluation_create_model_delete(self):
+        """create evaluation with non-existing epoch"""
+        dataset_id = self.create_quick_dataset()
+        model_id = self.create_quick_model(dataset_id, train_epochs=1, snapshot_interval=0.5)
+        assert self.dataset_wait_completion(dataset_id) == 'Done', 'dataset creation failed'
+        assert self.model_wait_completion(model_id) == 'Done', 'model creation failed'
+        try:
+            evaluation_id = self.create_quick_evaluation(model_id, snapshot_epoch=2)
+        except ValueError:
+            return
+        assert False, 'Should have failed'
 

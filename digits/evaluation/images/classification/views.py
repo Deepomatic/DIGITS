@@ -3,9 +3,9 @@
 
 import flask
 import werkzeug.exceptions
-
+from digits.utils.routing import request_wants_json
 from digits.evaluation import tasks
-from digits.webapp import app, scheduler
+from digits.webapp import app, scheduler, autodoc
 from job import ImageClassificationEvaluationJob
 
 
@@ -13,18 +13,26 @@ NAMESPACE = '/evaluations/images/classification'
 
 
 @app.route(NAMESPACE + '/new', methods=['GET'])
+@autodoc('evaluations')
 def image_classification_evaluation_new():
     return flask.render_template('evaluations/images/classification/new.html')
 
 
-@app.route(NAMESPACE + '/accuracy', methods=['POST'])
+@app.route(NAMESPACE + '.json', methods=['POST'])
+@app.route(NAMESPACE, methods=['POST'])
+@autodoc(['evaluations', 'api'])
 def image_classification_evaluation_create():
-    """Creates a classification performance evaluation task """
+    """
+    Create a new ImageClassificationModelJob
 
+    Returns JSON when requested: {job_id,name,status} or {errors:[]}
+    """
     modelJob = scheduler.get_job(flask.request.args['job_id'])
 
     if modelJob is None:
-        raise werkzeug.exceptions.NotFound('Job not found')
+        raise werkzeug.exceptions.BadRequest(
+                'Unknown model job_id "%s"' % flask.request.args['job_id'])
+
 
     job = None
     try:
@@ -65,7 +73,10 @@ def image_classification_evaluation_create():
 
         # The job is created
         scheduler.add_job(job)
-        return flask.redirect(flask.url_for('evaluations_show', job_id=job.id()))
+        if request_wants_json():
+            return flask.jsonify(job.json_dict())
+        else:
+            return flask.redirect(flask.url_for('evaluations_show', job_id=job.id()))
 
     except:
         if job:

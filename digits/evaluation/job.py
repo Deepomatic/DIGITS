@@ -2,6 +2,7 @@
 
 from digits.job import Job
 from . import tasks
+from digits.utils import override
 
 # NOTE: Increment this everytime the pickled object changes
 PICKLE_VERSION = 1
@@ -21,3 +22,11 @@ class EvaluationJob(Job):
     def accuracy_tasks(self):
         """Return all the Accuracy Tasks for this job"""
         return [t for t in self.tasks if isinstance(t, tasks.AccuracyTask)]
+
+    @override
+    def json_dict(self, verbose=False):
+        d = super(EvaluationJob, self).json_dict(verbose)
+
+        # if verbose:
+        #    TODO
+        return d
