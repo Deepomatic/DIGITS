@@ -10,6 +10,7 @@ import digits
 from digits import utils
 from digits.webapp import app, autodoc
 import classification.views
+import regression.views
 
 NAMESPACE = '/datasets/images'
 

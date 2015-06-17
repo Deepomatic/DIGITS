@@ -8,6 +8,7 @@ VAL_DB = 'val_db'
 TEST_FILE = 'test.txt'
 TEST_DB = 'test_db'
 MEAN_FILE_IMAGE = 'mean.jpg'
+TMP_FILE  = 'tmp.txt'
 
 # Classification jobs
 LABELS_FILE = 'labels.txt'

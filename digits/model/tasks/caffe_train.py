@@ -14,9 +14,9 @@ from caffe.proto import caffe_pb2
 from train import TrainTask
 from digits.config import config_value
 from digits.status import Status
-from digits import utils, dataset
+from digits import utils
 from digits.utils import subclass, override, constants
-from digits.dataset import ImageClassificationDatasetJob
+from digits.dataset import ImageClassificationDatasetJob, ImageRegressionDatasetJob
 
 # NOTE: Increment this everytime the pickled object changes
 PICKLE_VERSION = 2
@@ -96,8 +96,10 @@ class CaffeTrainTask(TrainTask):
     def before_run(self):
         super(CaffeTrainTask, self).before_run()
 
-        if isinstance(self.dataset, dataset.ImageClassificationDatasetJob):
+        if isinstance(self.dataset, ImageClassificationDatasetJob):
             self.save_prototxt_files()
+        if isinstance(self.dataset, ImageRegressionDatasetJob):
+            self.save_prototxt_regression_files()
         else:
             raise NotImplementedError
 
@@ -107,6 +109,327 @@ class CaffeTrainTask(TrainTask):
         self.receiving_val_output = False
         self.last_train_update = None
         return True
+
+
+    def save_prototxt_regression_files(self):
+        """
+        Save solver, train_val and deploy files to disk
+        """
+        has_val_set = self.dataset.val_db_task() is not None
+
+        ### Check what has been specified in self.network
+
+        tops = []
+        bottoms = {}
+        train_data_layer = None
+        val_data_layer = None
+        hidden_layers = caffe_pb2.NetParameter()
+        loss_layers = []
+        accuracy_layers = []
+        for layer in self.network.layer:
+            print layer.type
+            assert layer.type not in ['MemoryData', 'HDF5Data', 'ImageData'], 'unsupported data layer type'
+            # if layer.type == 'Data':
+            #     for rule in layer.include:
+            #         if rule.phase == caffe_pb2.TRAIN:
+            #             assert train_data_layer is None, 'cannot specify two train data layers'
+            #             train_data_layer = layer
+            #         elif rule.phase == caffe_pb2.TEST:
+            #             assert val_data_layer is None, 'cannot specify two test data layers'
+            #             val_data_layer = layer
+            if 1 is None:
+                pass
+            elif layer.type == 'EuclideanLoss':
+                loss_layers.append(layer)
+            # elif layer.type == 'Accuracy':
+            #     addThis = True
+            #     if layer.accuracy_param.HasField('top_k'):
+            #         if layer.accuracy_param.top_k >= len(self.get_labels()):
+            #             self.logger.warning('Removing layer %s because top_k=%s while there are are only %s labels in this dataset' % (layer.name, layer.accuracy_param.top_k, len(self.get_labels())))
+            #             addThis = False
+            #     if addThis:
+            #         accuracy_layers.append(layer)
+            else:
+                # if layer.type == 'InnerProduct' and not layer.inner_product_param.num_output:
+                #     layer.inner_product_param.num_output = int(self.get_labels_regression()[0])
+                hidden_layers.layer.add().CopyFrom(layer)
+                if len(layer.bottom) == 1 and len(layer.top) == 1 and layer.bottom[0] == layer.top[0]:
+                    pass
+                else:
+                    for top in layer.top:
+                        tops.append(top)
+                    for bottom in layer.bottom:
+                        bottoms[bottom] = True
+
+
+        if train_data_layer is None:
+            assert val_data_layer is None, 'cannot specify a test data layer without a train data layer'
+
+        assert len(loss_layers) > 0, 'must specify a loss layer'
+
+        network_outputs = []
+        for name in tops:
+            if name not in bottoms:
+                network_outputs.append(name)
+        assert len(network_outputs), 'network must have an output'
+
+        # Update num_output for any output InnerProduct layers automatically
+        # for layer in hidden_layers.layer:
+        #     if layer.type == 'InnerProduct':
+        #         for top in layer.top:
+        #             if top in network_outputs:
+        #                 layer.inner_product_param.num_output = 500#len(self.get_labels())
+        #                 break
+
+        ### Write train_val file
+
+        train_val_network = caffe_pb2.NetParameter()
+        label_layer = {"train": [], "val" : []}
+        # data layers
+        if train_data_layer is not None:
+            if train_data_layer.HasField('data_param'):
+                assert not train_data_layer.data_param.HasField('source'), "don't set the data_param.source"
+                assert not train_data_layer.data_param.HasField('backend'), "don't set the data_param.backend"
+            max_crop_size = min(self.dataset.image_dims[0], self.dataset.image_dims[1])
+            if self.crop_size:
+                assert self.crop_size <= max_crop_size, 'crop_size is larger than the image size'
+                train_data_layer.transform_param.crop_size = self.crop_size
+            elif train_data_layer.transform_param.HasField('crop_size'):
+                cs = train_data_layer.transform_param.crop_size
+                if cs > max_crop_size:
+                    # don't throw an error here
+                    cs = max_crop_size
+                train_data_layer.transform_param.crop_size = cs
+                self.crop_size = cs
+            train_val_network.layer.add().CopyFrom(train_data_layer)
+            train_data_layer = train_val_network.layer[-1]
+            if val_data_layer is not None and has_val_set:
+                if val_data_layer.HasField('data_param'):
+                    assert not val_data_layer.data_param.HasField('source'), "don't set the data_param.source"
+                    assert not val_data_layer.data_param.HasField('backend'), "don't set the data_param.backend"
+                if self.crop_size:
+                    # use our error checking from the train layer
+                    val_data_layer.transform_param.crop_size = self.crop_size
+                train_val_network.layer.add().CopyFrom(val_data_layer)
+                val_data_layer = train_val_network.layer[-1]
+        else:
+            train_data_layer = train_val_network.layer.add(type = 'Data', name = 'data')
+            train_data_layer.top.append('data')
+            train_data_layer.include.add(phase = caffe_pb2.TRAIN)
+            train_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+
+            for i, lab in enumerate(self.get_labels(True)):
+                label_layer["train"].append(train_val_network.layer.add(type = 'Data', name = 'label' + str(i)))
+                label_layer["train"][i].top.append('label' + str(i))
+                label_layer["train"][i].include.add(phase = caffe_pb2.TRAIN)
+                label_layer["train"][i].data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+            # label_train_data_layer = train_val_network.layer.add(type = 'Data', name = 'label')
+            # label_train_data_layer.top.append('label')
+            # label_train_data_layer.include.add(phase = caffe_pb2.TRAIN)
+            # label_train_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+            
+
+            # if self.crop_size:                
+            #     label_train_data_layer.transform_param.crop_size = self.crop_size
+            #     label_train_data_layer.transform_param.crop_size = self.crop_size
+            if has_val_set:
+                val_data_layer = train_val_network.layer.add(type = 'Data', name = 'data')
+                val_data_layer.top.append('data')
+                val_data_layer.include.add(phase = caffe_pb2.TEST)
+                val_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+
+                #####
+                # label_val_data_layer = train_val_network.layer.add(type = 'Data', name = 'label')
+                # label_val_data_layer.top.append('label')
+                # label_val_data_layer.include.add(phase = caffe_pb2.TEST)
+                # label_val_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+                for i, lab in enumerate(self.get_labels(True)):
+                    label_layer["val"].append(train_val_network.layer.add(type = 'Data', name = 'label' + str(i)))
+                    label_layer["val"][i].top.append('label' + str(i))
+                    label_layer["val"][i].include.add(phase = caffe_pb2.TEST)
+                    label_layer["val"][i].data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+
+
+                if self.crop_size:
+                    val_data_layer.transform_param.crop_size = self.crop_size
+                    #label_val_data_layer.transform_param.crop_size = self.crop_size
+
+        print self.dataset.train_db_task()
+        print dir(self.dataset)
+
+        train_data_layer.data_param.source = self.dataset.path(self.dataset.train_db_task().db_name + "/data_lmdb/")
+        train_data_layer.data_param.backend = caffe_pb2.DataParameter.LMDB
+        for i, lab in enumerate(self.get_labels(True)):
+            label_layer["train"][i].data_param.source = self.dataset.path(self.dataset.train_db_task().db_name + "/labels_{}_lmdb/".format(i))
+            label_layer["train"][i].data_param.backend = caffe_pb2.DataParameter.LMDB
+        if val_data_layer is not None and has_val_set:
+            val_data_layer.data_param.source = self.dataset.path(self.dataset.val_db_task().db_name + "/data_lmdb/")
+            val_data_layer.data_param.backend = caffe_pb2.DataParameter.LMDB
+
+            for i, lab in enumerate(self.get_labels(True)):
+                label_layer["val"][i].data_param.source = self.dataset.path(self.dataset.val_db_task().db_name + "/labels_{}_lmdb/".format(i))
+                label_layer["val"][i].data_param.backend = caffe_pb2.DataParameter.LMDB
+            # label_val_data_layer.data_param.source = self.dataset.path(self.dataset.val_db_task().db_name + "/labels_lmdb/")
+            # label_val_data_layer.data_param.backend = caffe_pb2.DataParameter.LMDB
+
+        if self.use_mean:
+            train_data_layer.transform_param.mean_file = self.dataset.path(".") + "/mean.binaryproto"
+            if val_data_layer is not None and has_val_set:
+                val_data_layer.transform_param.mean_file = self.dataset.path(".") + "/mean.binaryproto"
+        if self.batch_size:
+            train_data_layer.data_param.batch_size = self.batch_size
+            for i, lab in enumerate(self.get_labels(True)):
+                label_layer["train"][i].data_param.batch_size = self.batch_size
+
+            #label_train_data_layer.data_param.batch_size = self.batch_size
+            if val_data_layer is not None and has_val_set:
+                val_data_layer.data_param.batch_size = self.batch_size
+                for i, lab in enumerate(self.get_labels(True)):
+                    label_layer["val"][i].data_param.batch_size = self.batch_size
+                #label_val_data_layer.data_param.batch_size = self.batch_size
+        else:
+            if not train_data_layer.data_param.HasField('batch_size'):
+                train_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+                for i, lab in enumerate(self.get_labels(True)):
+                    label_layer["train"][i].data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+                #label_train_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+
+            if val_data_layer is not None and has_val_set and not val_data_layer.data_param.HasField('batch_size'):
+                val_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+                for i, lab in enumerate(self.get_labels(True)):
+                    label_layer["val"][i].data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+                #label_val_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+
+        # hidden layers
+        train_val_network.MergeFrom(hidden_layers)
+
+        # output layers
+        train_val_network.layer.extend(loss_layers)
+        train_val_network.layer.extend(accuracy_layers)
+
+        with open(self.path(self.train_val_file), 'w') as outfile:
+            text_format.PrintMessage(train_val_network, outfile)
+
+        ### Write deploy file
+
+        deploy_network = caffe_pb2.NetParameter()
+
+        # input
+        deploy_network.input.append('data')
+        deploy_network.input_dim.append(1)
+        deploy_network.input_dim.append(self.dataset.image_dims[2])
+        if self.crop_size:
+            deploy_network.input_dim.append(self.crop_size)
+            deploy_network.input_dim.append(self.crop_size)
+        else:
+            deploy_network.input_dim.append(self.dataset.image_dims[0])
+            deploy_network.input_dim.append(self.dataset.image_dims[1])
+
+        # hidden layers
+        for i, layer in enumerate(hidden_layers.layer):
+            if layer.type.lower() == 'label':
+                del hidden_layers.layer[i]
+        deploy_network.MergeFrom(hidden_layers)
+
+        # output layers
+        if loss_layers[-1].type == 'SoftmaxWithLoss':
+            prob_layer = deploy_network.layer.add(
+                    type = 'Softmax',
+                    name = 'prob')
+            prob_layer.bottom.append(network_outputs[-1])
+            prob_layer.top.append('prob')
+
+        with open(self.path(self.deploy_file), 'w') as outfile:
+            text_format.PrintMessage(deploy_network, outfile)
+
+        ### Write solver file
+
+        solver = caffe_pb2.SolverParameter()
+        # get enum value for solver type
+        solver.solver_type = getattr(solver, self.solver_type)
+        solver.net = self.train_val_file
+        # TODO: detect if caffe is built with CPU_ONLY
+        gpu_list = config_value('gpu_list')
+        if gpu_list and gpu_list != 'NONE':
+            solver.solver_mode = caffe_pb2.SolverParameter.GPU
+        else:
+            solver.solver_mode = caffe_pb2.SolverParameter.CPU
+        solver.snapshot_prefix = self.snapshot_prefix
+
+        # Epochs -> Iterations
+
+        train_iter = int(math.ceil(float(self.dataset.train_db_task().entries_count) / train_data_layer.data_param.batch_size))
+        solver.max_iter = train_iter * self.train_epochs
+        snapshot_interval = self.snapshot_interval * train_iter
+        if 0 < snapshot_interval <= 1:
+            solver.snapshot = 1 # don't round down
+        elif 1 < snapshot_interval < solver.max_iter:
+            solver.snapshot = int(snapshot_interval)
+        else:
+            solver.snapshot = 0 # only take one snapshot at the end
+
+        if has_val_set and self.val_interval:
+            solver.test_iter.append(int(math.ceil(float(self.dataset.val_db_task().entries_count) / val_data_layer.data_param.batch_size)))
+            val_interval = self.val_interval * train_iter
+            if 0 < val_interval <= 1:
+                solver.test_interval = 1 # don't round down
+            elif 1 < val_interval < solver.max_iter:
+                solver.test_interval = int(val_interval)
+            else:
+                solver.test_interval = solver.max_iter # only test once at the end
+
+        # Learning rate
+        solver.base_lr = self.learning_rate
+        solver.lr_policy = self.lr_policy['policy']
+        scale = float(solver.max_iter)/100.0
+        if solver.lr_policy == 'fixed':
+            pass
+        elif solver.lr_policy == 'step':
+            # stepsize = stepsize * scale
+            solver.stepsize = int(math.ceil(float(self.lr_policy['stepsize']) * scale))
+            solver.gamma = self.lr_policy['gamma']
+        elif solver.lr_policy == 'multistep':
+            for value in self.lr_policy['stepvalue']:
+                # stepvalue = stepvalue * scale
+                solver.stepvalue.append(int(math.ceil(float(value) * scale)))
+            solver.gamma = self.lr_policy['gamma']
+        elif solver.lr_policy == 'exp':
+            # gamma = gamma^(1/scale)
+            solver.gamma = math.pow(self.lr_policy['gamma'], 1.0/scale)
+        elif solver.lr_policy == 'inv':
+            # gamma = gamma / scale
+            solver.gamma = self.lr_policy['gamma'] / scale
+            solver.power = self.lr_policy['power']
+        elif solver.lr_policy == 'poly':
+            solver.power = self.lr_policy['power']
+        elif solver.lr_policy == 'sigmoid':
+            # gamma = -gamma / scale
+            solver.gamma = -1.0 * self.lr_policy['gamma'] / scale
+            # stepsize = stepsize * scale
+            solver.stepsize = int(math.ceil(float(self.lr_policy['stepsize']) * scale))
+        else:
+            raise Exception('Unknown lr_policy: "%s"' % solver.lr_policy)
+
+        # go with the suggested defaults
+        if solver.solver_type != solver.ADAGRAD:
+            solver.momentum = 0.9
+        solver.weight_decay = 0.0005
+
+        # Display 8x per epoch, or once per 5000 images, whichever is more frequent
+        solver.display = max(1, min(
+                int(math.floor(float(solver.max_iter) / (self.train_epochs * 8))),
+                int(math.ceil(5000.0 / train_data_layer.data_param.batch_size))
+                ))
+
+        if self.random_seed is not None:
+            solver.random_seed = self.random_seed
+
+        with open(self.path(self.solver_file), 'w') as outfile:
+            text_format.PrintMessage(solver, outfile)
+        self.solver = solver # save for later
+        return True
+
+############################################################################
 
     def save_prototxt_files(self):
         """
@@ -607,7 +930,7 @@ class CaffeTrainTask(TrainTask):
 
     @override
     def infer_one(self, data, snapshot_epoch=None, layers=None):
-        if isinstance(self.dataset, ImageClassificationDatasetJob):
+        if isinstance(self.dataset, ImageClassificationDatasetJob) or isinstance(self.dataset, ImageRegressionDatasetJob):
             return self.classify_one(data,
                     snapshot_epoch=snapshot_epoch,
                     layers=layers,
@@ -649,8 +972,35 @@ class CaffeTrainTask(TrainTask):
         scores = output[net.outputs[-1]].flatten()
         indices = (-scores).argsort()
         predictions = []
-        for i in indices:
-            predictions.append( (labels[i], scores[i]) )
+        # for i in indices:
+        #     predictions.append( (labels[i], scores[i]) )
+        if isinstance(self.dataset, ImageClassificationDatasetJob): 
+            scores = output[net.outputs[-1]].flatten()
+            indices = (-scores).argsort()
+            for i in indices:
+                    predictions.append( (self.get_labels()[i], scores[i]) )
+
+        elif isinstance(self.dataset, ImageRegressionDatasetJob):
+            rep = {}
+            predictions = {"predictions" : rep, "labels" : self.get_labels(True)[0]}
+            columns = []
+            columns.append(['x'] + self.get_labels(True)[0])
+            for line in net.outputs:
+                scores = output[line].flatten()
+                rep[line] = []
+                indices = (-scores).argsort()
+                indices.sort()
+                tmp = []
+                tmp.append(line)
+                for i in indices:
+                    rep[line].append((i, scores[i])) #david
+                    tmp.append(np.float64(scores[i]))
+                columns.append(tmp)
+            predictions['data'] = {
+                'x' : 'x',
+                'columns': columns,
+                'type': 'bar'
+                }
 
 
         # add visualizations

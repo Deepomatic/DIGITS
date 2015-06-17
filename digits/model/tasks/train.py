@@ -393,24 +393,50 @@ class TrainTask(Task):
         """
         return None
 
-    def get_labels(self):
+    def get_labels(self, isRegression = False):
         """
         Read labels from labels_file and return them in a list
         """
         # The labels might be set already
-        if hasattr(self, '_labels') and self._labels and len(self._labels) > 0:
-            return self._labels
+        # if hasattr(self, '_labels') and self._labels and len(self._labels) > 0:
+        #     return self._labels
 
         assert hasattr(self.dataset, 'labels_file'), 'labels_file not set'
         assert self.dataset.labels_file, 'labels_file not set'
         assert os.path.exists(self.dataset.path(self.dataset.labels_file)), 'labels_file does not exist'
 
         labels = []
-        with open(self.dataset.path(self.dataset.labels_file)) as infile:
-            for line in infile:
-                label = line.strip()
-                if label:
-                    labels.append(label)
+        if isRegression:
+            nbr_diff_labels = 0
+            with open(self.dataset.path("train.txt"), 'r') as fd:
+                line = fd.readline()
+                nbr_diff_labels = line.strip().split()
+
+            with open(self.dataset.path(self.dataset.labels_file)) as infile:
+                idx = 0
+                count = 0
+                lbls = []
+                labels = []
+                for line in infile:
+                    label = line.strip()
+                    if label:
+                        lbls.append(label)
+                    count += 1
+                    if count == int(nbr_diff_labels[idx]):
+                        labels.append(lbls)
+                        lbls = []
+                        count = 0
+                        idx += 1
+                    if idx >= len(nbr_diff_labels):
+                        print idx, len(nbr_diff_labels)
+                        break
+            # return self._labels
+        else:
+            with open(self.dataset.path(self.dataset.labels_file)) as infile:
+                for line in infile:
+                    label = line.strip()
+                    if label:
+                        labels.append(label)
 
         assert len(labels) > 0, 'no labels in labels_file'
 

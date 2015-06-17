@@ -50,6 +50,11 @@ def home():
                         'id': 'image-classification',
                         'url': flask.url_for('image_classification_dataset_new'),
                         },
+                    {
+                        'title': 'Regression',
+                        'id': 'image-regression',
+                        'url': flask.url_for('image_regression_dataset_new'),
+                        },
                     ])
                 ]
         new_model_options = [
@@ -58,6 +63,11 @@ def home():
                         'title': 'Classification',
                         'id': 'image-classification',
                         'url': flask.url_for('image_classification_model_new'),
+                        },
+                    {
+                        'title': 'Regression',
+                        'id': 'image-regression',
+                        'url': flask.url_for('image_regression_model_new'),
                         },
                     ])
                 ]

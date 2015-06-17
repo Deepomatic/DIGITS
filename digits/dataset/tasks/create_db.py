@@ -264,3 +264,230 @@ class CreateDbTask(Task):
                     },
                 }
 
+######################################## Regression task ########################################################
+
+@subclass
+class CreateDbTaskRegression(Task):
+    """Creates a database"""
+
+    def __init__(self, input_file, db_name, image_dims, **kwargs):
+        """
+        Arguments:
+        input_file -- read images and labels from this file
+        db_name -- save database to this location
+        image_dims -- (height, width, channels)
+
+        Keyword Arguments:
+        image_folder -- prepend image paths with this folder
+        shuffle -- shuffle images before saving
+        resize_mode -- used in utils.image.resize_image()
+        encoding -- 'none', 'png' or 'jpg'
+        mean_file -- save mean file to this location
+        backend -- type of database to use
+        labels_file -- used to print category distribution
+        """
+        # Take keyword arguments out of kwargs
+        self.image_folder = kwargs.pop('image_folder', None)
+        self.shuffle = kwargs.pop('shuffle', True)
+        self.resize_mode = kwargs.pop('resize_mode' , None)
+        self.encoding = kwargs.pop('encoding', None)
+        self.mean_file = kwargs.pop('mean_file', None)
+        self.backend = kwargs.pop('backend', None)
+        self.labels_file = kwargs.pop('labels_file', None)
+
+        super(CreateDbTaskRegression, self).__init__(**kwargs)
+        self.pickver_task_createdb = PICKLE_VERSION
+
+        self.input_file = input_file
+        self.db_name = db_name
+        self.image_dims = image_dims
+        if image_dims[2] == 3:
+            self.image_channel_order = 'BGR'
+        else:
+            self.image_channel_order = None
+
+        self.entries_count = None
+        self.distribution = None
+
+    def __getstate__(self):
+        d = super(CreateDbTaskRegression, self).__getstate__()
+        if 'labels' in d:
+            del d['labels']
+        return d
+
+    def __setstate__(self, state):
+        super(CreateDbTaskRegression, self).__setstate__(state)
+
+        if self.pickver_task_createdb <= 1:
+            print 'Upgrading CreateDbTask to version 2'
+            if self.image_dims[2] == 1:
+                self.image_channel_order = None
+            elif self.encode:
+                self.image_channel_order = 'BGR'
+            else:
+                self.image_channel_order = 'RGB'
+        if self.pickver_task_createdb <= 2:
+            print 'Upgrading CreateDbTask to version 3'
+            if hasattr(self, 'encode'):
+                if self.encode:
+                    self.encoding = 'jpg'
+                else:
+                    self.encoding = 'none'
+                delattr(self, 'encode')
+            else:
+                self.encoding = 'none'
+        self.pickver_task_createdb = PICKLE_VERSION
+
+    @override
+    def name(self):
+        return 'Create DB (%s)' % self.db_name
+
+    @override
+    def html_id(self):
+        return super(CreateDbTaskRegression, self).html_id()
+
+    @override
+    def offer_resources(self, resources):
+        key = 'create_db_task_pool'
+        if key not in resources:
+            return None
+        for resource in resources[key]:
+            if resource.remaining() >= 1:
+                return {key: [(resource.identifier, 1)]}
+        return None
+
+    @override
+    def task_arguments(self, resources):
+        args = ["/".join([os.path.join(os.path.dirname(os.path.dirname(digits.__file__))), "tools", "regression_db.bin"]),
+            "--logtostderr=1",
+            "-resize_height={}".format(self.image_dims[1]),
+            "-resize_width={}".format(self.image_dims[0]),
+            "-gray=False",
+            "-shuffle=True",
+            "-encode_type=jpg",
+            self.path("."),
+            self.path(self.input_file),
+            self.db_name]
+        return args
+
+    @override
+    def preprocess_output_digits(self, line):
+        match = re.match(r'(\S{5}) (\S{8}).*\]\s+(.*)$', line)
+        if match:
+            timestr = match.group(2)
+            level = match.group(1)
+            message = match.group(3)
+            if level.startswith('D'):
+                level = 'debug'
+            elif level.startswith('I'):
+                level = 'info'
+            elif level.startswith('W'):
+                level = 'warning'
+            elif level.startswith('E'):
+                level = 'error'
+            elif level.startswith('C'):
+                level = 'critical'
+            return (timestr, level, message)
+        else:
+            return (None, None, None)
+
+    @override
+    def process_output(self, line):
+        from digits.webapp import socketio
+        import time
+
+        timestamp, level, message = self.preprocess_output_digits(line)
+        if not message:
+            return False
+
+        level = 0
+        timestamp = time.time()
+        # progress
+        match = re.match(r'Processed (\d+)\/(\d+)', message)
+        if match:
+            self.progress = float(match.group(1))/int(match.group(2))
+            socketio.emit('task update',
+                    {
+                        'task': self.html_id(),
+                        'update': 'progress',
+                        'percentage': int(round(100*self.progress)),
+                        'eta': utils.time_filters.print_time_diff(self.est_done()),
+                        },
+                    namespace='/jobs',
+                    room=self.job_id,
+                    )
+            return True
+
+        match = re.match(r'Total images added: (\d+)', message)
+        if match:
+            self.entries_count = int(match.group(1))
+            self.logger.debug(message)
+            return True
+
+        if line.find("--Done--") != -1:
+            self.progress = 1
+
+
+
+            return True
+
+        return True
+
+    def get_labels(self):
+        """
+        Read labels from labels_file and return them in a list
+        """
+        # The labels might be set already
+        if hasattr(self, '_labels') and self._labels and len(self._labels) > 0:
+            return self._labels
+
+        assert hasattr(self, 'labels_file'), 'labels_file not set'
+        assert self.labels_file, 'labels_file not set'
+        assert os.path.exists(self.path(self.labels_file)), 'labels_file does not exist'
+        labels = []
+        size = 0
+        with open(self.labels_file, 'r') as fd:
+            for line in fd:
+                labels.append(line.strip())
+                size += 1
+        assert len(labels) > 0, 'no labels in labels_file'
+
+        self._labels = (size, labels)
+        return self._labels
+
+
+    def distribution_data(self):
+        """
+        Returns distribution data for a C3.js graph
+        """
+        if self.distribution is None:
+            return None
+        try:
+            labels = self.get_labels()
+        except AssertionError:
+            return None
+
+        if len(self.distribution.keys()) != len(labels):
+            return None
+
+        values = ['Count']
+        titles = []
+        for key, value in sorted(
+                self.distribution.items(),
+                key=operator.itemgetter(1),
+                reverse=True):
+            values.append(value)
+            titles.append(labels[int(key)])
+
+        return {
+                'data': {
+                    'columns': [values],
+                    'type': 'bar'
+                    },
+                'axis': {
+                    'x': {
+                        'type': 'category',
+                        'categories': titles,
+                        }
+                    },
+                }
