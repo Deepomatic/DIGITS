@@ -223,36 +223,22 @@ class CaffeTrainTask(TrainTask):
                 label_layer["train"][i].top.append('label' + str(i))
                 label_layer["train"][i].include.add(phase = caffe_pb2.TRAIN)
                 label_layer["train"][i].data_param.batch_size = constants.DEFAULT_BATCH_SIZE
-            # label_train_data_layer = train_val_network.layer.add(type = 'Data', name = 'label')
-            # label_train_data_layer.top.append('label')
-            # label_train_data_layer.include.add(phase = caffe_pb2.TRAIN)
-            # label_train_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
             
 
-            # if self.crop_size:                
-            #     label_train_data_layer.transform_param.crop_size = self.crop_size
-            #     label_train_data_layer.transform_param.crop_size = self.crop_size
+            if self.crop_size:                
+                label_train_data_layer.transform_param.crop_size = self.crop_size
+
             if has_val_set:
                 val_data_layer = train_val_network.layer.add(type = 'Data', name = 'data')
                 val_data_layer.top.append('data')
                 val_data_layer.include.add(phase = caffe_pb2.TEST)
                 val_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
 
-                #####
-                # label_val_data_layer = train_val_network.layer.add(type = 'Data', name = 'label')
-                # label_val_data_layer.top.append('label')
-                # label_val_data_layer.include.add(phase = caffe_pb2.TEST)
-                # label_val_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
                 for i, lab in enumerate(self.get_labels(True)):
                     label_layer["val"].append(train_val_network.layer.add(type = 'Data', name = 'label' + str(i)))
                     label_layer["val"][i].top.append('label' + str(i))
                     label_layer["val"][i].include.add(phase = caffe_pb2.TEST)
                     label_layer["val"][i].data_param.batch_size = constants.DEFAULT_BATCH_SIZE
-
-
-                if self.crop_size:
-                    val_data_layer.transform_param.crop_size = self.crop_size
-                    #label_val_data_layer.transform_param.crop_size = self.crop_size
 
         print self.dataset.train_db_task()
         print dir(self.dataset)
@@ -269,8 +255,6 @@ class CaffeTrainTask(TrainTask):
             for i, lab in enumerate(self.get_labels(True)):
                 label_layer["val"][i].data_param.source = self.dataset.path(self.dataset.val_db_task().db_name + "/labels_{}_lmdb/".format(i))
                 label_layer["val"][i].data_param.backend = caffe_pb2.DataParameter.LMDB
-            # label_val_data_layer.data_param.source = self.dataset.path(self.dataset.val_db_task().db_name + "/labels_lmdb/")
-            # label_val_data_layer.data_param.backend = caffe_pb2.DataParameter.LMDB
 
         if self.use_mean:
             train_data_layer.transform_param.mean_file = self.dataset.path(".") + "/mean.binaryproto"
