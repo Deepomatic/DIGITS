@@ -98,7 +98,7 @@ class CaffeTrainTask(TrainTask):
 
         if isinstance(self.dataset, ImageClassificationDatasetJob):
             self.save_prototxt_files()
-        if isinstance(self.dataset, ImageRegressionDatasetJob):
+        elif isinstance(self.dataset, ImageRegressionDatasetJob):
             self.save_prototxt_regression_files()
         else:
             raise NotImplementedError

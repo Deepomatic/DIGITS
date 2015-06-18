@@ -1,6 +1,6 @@
 # REST API
 
-*Generated Jun 10, 2015*
+*Generated Jun 18, 2015*
 
 DIGITS exposes its internal functionality through a REST API. You can access these endpoints by performing a GET or POST on the route, and a JSON object will be returned.
 
@@ -33,6 +33,18 @@ Location: [`digits/dataset/views.py@15`](../digits/dataset/views.py#L15)
 Methods: **POST**
 
 Location: [`digits/dataset/images/classification/views.py@217`](../digits/dataset/images/classification/views.py#L217)
+
+### `/datasets/images/regression.json`
+
+> Creates a new ImageClassificationDatasetJob
+
+> 
+
+> Returns JSON when requested: {job_id,name,status} or {errors:[]}
+
+Methods: **POST**
+
+Location: [`digits/dataset/images/regression/views.py@160`](../digits/dataset/images/regression/views.py#L160)
 
 ### `/index.json`
 
@@ -82,7 +94,7 @@ Location: [`digits/model/views.py@27`](../digits/model/views.py#L27)
 
 Methods: **POST**
 
-Location: [`digits/model/images/classification/views.py@49`](../digits/model/images/classification/views.py#L49)
+Location: [`digits/model/images/classification/views.py@51`](../digits/model/images/classification/views.py#L51)
 
 ### `/models/images/classification/classify_many.json`
 
@@ -94,7 +106,7 @@ Location: [`digits/model/images/classification/views.py@49`](../digits/model/ima
 
 Methods: **POST**
 
-Location: [`digits/model/images/classification/views.py@287`](../digits/model/images/classification/views.py#L287)
+Location: [`digits/model/images/classification/views.py@289`](../digits/model/images/classification/views.py#L289)
 
 ### `/models/images/classification/classify_one.json`
 
@@ -106,5 +118,13 @@ Location: [`digits/model/images/classification/views.py@287`](../digits/model/im
 
 Methods: **POST**
 
-Location: [`digits/model/images/classification/views.py@231`](../digits/model/images/classification/views.py#L231)
+Location: [`digits/model/images/classification/views.py@233`](../digits/model/images/classification/views.py#L233)
+
+### `/models/images/regression.json`
+
+> Create a new ImageClassificationModelJob
+
+Methods: **POST**
+
+Location: [`digits/model/images/regression/views.py@53`](../digits/model/images/regression/views.py#L53)
 
