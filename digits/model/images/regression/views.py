@@ -281,7 +281,7 @@ def image_regression_model_classify_many():
     """
     Classify many images and return the top 5 classifications for each
     """
-    job = scheduler.get_job(request.args['job_id'])
+    job = scheduler.get_job(flask.request.args['job_id'])
     if not job:
         raise werkzeug.exceptions.NotFound('Job not found')
 
