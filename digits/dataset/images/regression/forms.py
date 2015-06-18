@@ -1,13 +1,10 @@
 # Copyright (c) 2014-2015, NVIDIA CORPORATION.  All rights reserved.
 
-import os.path
 import requests
-
 import wtforms
 from wtforms import validators
 
 from ..forms import ImageDatasetForm
-from digits import utils
 from digits.utils.forms import validate_required_iff
 
 class ImageRegressionDatasetForm(ImageDatasetForm):
