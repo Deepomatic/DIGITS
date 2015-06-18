@@ -8,6 +8,7 @@ import argparse
 from mnist import MnistDownloader
 from cifar10 import Cifar10Downloader
 from cifar100 import Cifar100Downloader
+from espgame import EspgameDownloader
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Download-Data tool - DIGITS')
@@ -15,7 +16,7 @@ if __name__ == '__main__':
     ### Positional arguments
 
     parser.add_argument('dataset',
-            help='mnist/cifar10/cifar100'
+            help='mnist/cifar10/cifar100/espgame'
             )
     parser.add_argument('output_dir',
             help='The output directory for the data'
@@ -45,6 +46,11 @@ if __name__ == '__main__':
         d.getData()
     elif dataset == 'cifar100':
         d = Cifar100Downloader(
+                outdir  = args['output_dir'],
+                clean   = args['clean'])
+        d.getData()
+    elif dataset == 'espgame':
+        d = EspgameDownloader(
                 outdir  = args['output_dir'],
                 clean   = args['clean'])
         d.getData()
