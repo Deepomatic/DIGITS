@@ -50,11 +50,9 @@ class EspgameDownloader(DataDownloader):
             for entry in set(self.labels):
                 i += 1
                 result.append((entry, self.labels.count(entry)))
-                print i
             result.sort(key = lambda x: -x[1])
             result = map( lambda x:x[0], result[0:200])
             self.labels = list(set(result))
-            print len(self.labels)
 
             with open(label_path, "w") as fd:
                 for l in self.labels:
@@ -72,8 +70,7 @@ class EspgameDownloader(DataDownloader):
         if not os.path.exists(data_path):
             data_file = open(data_path, "w")
             files = glob.glob(os.path.join(self.outdir, "ESP-ImageSet/LABELS/*.desc"))
-
-            print len(files)
+            data_file.write('200\n')
 
             for f in files:
                 res = os.path.join(self.outdir, "ESP-ImageSet/images/" + os.path.splitext(f)[0])
