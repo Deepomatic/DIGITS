@@ -41,21 +41,22 @@ class EspgameDownloader(DataDownloader):
         if not os.path.exists(label_path):
             files = glob.glob(os.path.join(self.outdir, "ESP-ImageSet/LABELS/*.desc"))
             self.labels = []
+            print "- Collecting labels..."
             for f in files:
                 self.labels.extend([line.rstrip('\n') for line in open(f)])
 
-
             result = []
             i = 0
+            print "- Selecting the 200 most represented labels..."
             for entry in set(self.labels):
                 i += 1
-                result.append((entry, self.labels.count(entry)))
                 print i
+                result.append((entry, self.labels.count(entry)))
             result.sort(key = lambda x: -x[1])
             result = map( lambda x:x[0], result[0:200])
             self.labels = list(set(result))
-            print len(self.labels)
 
+            print "- Writing labels.txt..."
             with open(label_path, "w") as fd:
                 for l in self.labels:
                     fd.write(l+'\n')
@@ -72,16 +73,16 @@ class EspgameDownloader(DataDownloader):
         if not os.path.exists(data_path):
             data_file = open(data_path, "w")
             files = glob.glob(os.path.join(self.outdir, "ESP-ImageSet/LABELS/*.desc"))
-
-            print len(files)
+            data_file.write('200\n')
 
             for f in files:
-                res = os.path.join(self.outdir, "ESP-ImageSet/images/" + os.path.splitext(f)[0])
+                res = os.path.splitext(f)[0]
                 with open(f, 'r') as fd:
                     lines = [line.rstrip('\n') for line in fd]
                     for l in self.labels:
                         if l in lines:
                             res = res + ' 1'
+                            print res
                         else:
                             res = res + ' -1'
 
