@@ -4,13 +4,16 @@ import os
 import sys
 import logging
 import PIL.Image
-
-#import PIL.Image as PIL
+# 82.Image as PIL
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import digits.config
 digits.config.load_config()
+from digits.config import config_value
+from digits import utils, log
 
+import caffe
 from caffe.proto import caffe_pb2
 
 import thread
@@ -18,12 +21,12 @@ from threading import Lock
 import Queue
 import time
 
+
 flag = False
 mean = None
 mean_count = 0
 lock = Lock()
-
-logger = logging.getLogger('digits.tools.prepare_regression_db')
+logger = logging.getLogger('digits.tools.prepare_regression_files')
 
 def process_image(queue):
     global mean, mean_count, flag, lock
@@ -66,18 +69,20 @@ def preprocess_files(output_file, input_file, resize_mode, mean_file, image_widt
         thread.start_new_thread(process_image, (queue,))
 
     with open(input_file, "r") as fd:
-        fd.next() #jump the first line
         for i, line in enumerate(fd):
+            if i == 0:
+                continue
             line = line.split(" ")[0]
             if not os.access(line, os.W_OK):
                 logger.error("Can't open file:{}".format(line))
+                print line
                 sys.exit(-1)
             queue.put((line, output_list[i], image_height, image_width, resize_mode, encoding))
     
     flag = True
+    logger.debug("Processing images")
     while not queue.empty():
         logger.info("Process {}/{}".format(mean_count, len(output_list)))
-        time.sleep(0.01)
 
     if mean is not None:
         mean = np.around(mean / mean_count).astype(np.uint8)
