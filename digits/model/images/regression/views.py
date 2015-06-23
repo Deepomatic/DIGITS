@@ -174,6 +174,8 @@ def image_regression_model_create():
                 selected_gpus = [str(form.select_gpu.data)]
                 gpu_count = None
 
+
+        print form.crop_size.data
         job.tasks.append(
                 tasks.CaffeTrainTask(
                     job_dir         = job.dir(),
