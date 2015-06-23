@@ -57,14 +57,25 @@ def models_customize():
     if not network:
         raise werkzeug.exceptions.BadRequest('network not provided')
 
-    networks_dir = os.path.join(os.path.dirname(digits.__file__), 'standard-networks')
-    for filename in os.listdir(networks_dir):
-        path = os.path.join(networks_dir, filename)
-        if os.path.isfile(path):
-            match = re.match(r'%s.prototxt' % network, filename)
-            if match:
-                with open(path) as infile:
-                    return json.dumps({'network': infile.read()})
+
+
+    if 'network_type' in flask.request.args:
+        network_type = flask.request.args['network_type']
+
+        if not network_type:
+            raise werkzeug.exceptions.BadRequest('network type not provided')
+ 
+
+        networks_dir = os.path.join(os.path.dirname(digits.__file__), 'standard-networks', network_type)  
+        for filename in os.listdir(networks_dir):
+            path = os.path.join(networks_dir, filename)
+            if os.path.isfile(path):
+                match = re.match(r'%s.prototxt' % network, filename)
+                if match:
+                    with open(path) as infile:
+                        return json.dumps({'network': infile.read()})
+
+
     job = scheduler.get_job(network)
     if job is None:
         raise werkzeug.exceptions.NotFound('Job not found')

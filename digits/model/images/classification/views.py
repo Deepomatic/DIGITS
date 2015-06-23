@@ -89,7 +89,7 @@ def image_classification_model_create():
         pretrained_model = None
         if form.method.data == 'standard':
             found = False
-            networks_dir = os.path.join(os.path.dirname(digits.__file__), 'standard-networks')
+            networks_dir = os.path.join(os.path.dirname(digits.__file__), 'standard-networks/classification')
             for filename in os.listdir(networks_dir):
                 path = os.path.join(networks_dir, filename)
                 if os.path.isfile(path):
