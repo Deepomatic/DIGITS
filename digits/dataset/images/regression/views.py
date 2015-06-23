@@ -69,7 +69,7 @@ def generic(job, form, files, labels):
 
     prepare_task = tasks.PrepareFiles(
             job_dir     = job.dir(),
-            input_file  = os.path.join(job.dir(), utils.constants.TMP_FILE),
+            input_file  = files,
             output_file = os.path.join(tmp_path, "files.txt"),
             resize_mode = job.resize_mode,
             mean_file   = os.path.join(job.dir(), utils.constants.MEAN_FILE_CAFFE),
@@ -151,11 +151,7 @@ def from_files(job, form):
     generic(job, form, files, labels)
 
 def from_path(job, form):
-    print form.textfile_filesPath.data
-    print form.textfile_labelsPath.data
-
-
-
+    generic(job, form, form.textfile_filesPath.data, form.textfile_labelsPath.data)
 
 @app.route(NAMESPACE + '/new', methods=['GET'])
 @autodoc('datasets')

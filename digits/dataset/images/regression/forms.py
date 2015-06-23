@@ -6,6 +6,7 @@ from wtforms import validators
 
 from ..forms import ImageDatasetForm
 from digits.utils.forms import validate_required_iff
+import os
 
 class ImageRegressionDatasetForm(ImageDatasetForm):
     """
@@ -16,6 +17,7 @@ class ImageRegressionDatasetForm(ImageDatasetForm):
         choices = [
             ('folder', 'Folder'),
             ('textfile', 'Textfiles'),
+            ('upload', 'upload')
             ],
         default='folder',
         )
@@ -46,7 +48,7 @@ class ImageRegressionDatasetForm(ImageDatasetForm):
     method = wtforms.HiddenField(u'Dataset type',
             default='regression',
             validators=[
-                validators.AnyOf(['regression'], message='The method you chose is not currently supported.')
+                validators.AnyOf(['regression', 'upload'], message='The method you chose is not currently supported.')
                 ]
             )
     input_files = wtforms.FileField(u'Input file',
@@ -83,19 +85,29 @@ class ImageRegressionDatasetForm(ImageDatasetForm):
             default = True)
 
 
+
+    def validate_file_path(form, field):
+        if not field.data:
+            raise Validators.ValidationError('Please fill all the fields')
+        elif not os.path.exists(field.data) or os.path.isdir(field.data):
+                raise validators.ValidationError('File does not exist')
+        else:
+            return True
+
+
     ## file path
     textfile_filesPath = wtforms.StringField(u'Files file path',
             validators=[
                 validate_required_iff(
-                    method='textfile'
-                    )
+                    method='upload'),
+                    validate_file_path
                 ]
             )
 
     textfile_labelsPath = wtforms.StringField(u'Labels file path',
             validators=[
                 validate_required_iff(
-                    method='textfile'
-                    )
+                    method='upload'),
+                    validate_file_path
                 ]
             )
