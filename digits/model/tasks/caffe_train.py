@@ -223,9 +223,9 @@ class CaffeTrainTask(TrainTask):
                 label_layer["train"][i].data_param.batch_size = constants.DEFAULT_BATCH_SIZE
             
 
-            #HACK
-            if self.crop_size:                
-                label_train_data_layer.transform_param.crop_size = self.crop_size
+            # #HACK
+            # if self.crop_size:                
+            #     label_train_data_layer.transform_param.crop_size = self.crop_size
 
             if has_val_set:
                 val_data_layer = train_val_network.layer.add(type = 'Data', name = 'data')
