@@ -117,7 +117,6 @@ class PrepareFiles(Task):
     def process_output(self, line):
         from digits.webapp import socketio
 
-        print line
         timestamp, level, message = self.preprocess_output_digits(line)
         if not message:
             return False

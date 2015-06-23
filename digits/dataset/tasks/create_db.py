@@ -359,7 +359,6 @@ class CreateDbTaskRegression(Task):
     @override
     def task_arguments(self, resources):
         args = ["/".join([os.path.join(os.path.dirname(os.path.dirname(digits.__file__))), "tools", "regression_db.bin"]),
-            "--logtostderr=1",
             "-resize_height={}".format(self.image_dims[1]),
             "-resize_width={}".format(self.image_dims[0]),
             "-gray=False",
@@ -368,11 +367,13 @@ class CreateDbTaskRegression(Task):
             self.path("."),
             self.path(self.input_file),
             self.db_name]
+        print " ".join(args)
         return args
 
     @override
     def preprocess_output_digits(self, line):
         match = re.match(r'(\S{5}) (\S{8}).*\]\s+(.*)$', line)
+        #print match, line
         if match:
             timestr = match.group(2)
             level = match.group(1)
@@ -396,6 +397,7 @@ class CreateDbTaskRegression(Task):
         from digits.webapp import socketio
         import time
 
+        print line
         timestamp, level, message = self.preprocess_output_digits(line)
         if not message:
             return False

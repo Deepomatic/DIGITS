@@ -27,7 +27,7 @@ class DatasetJob(Job):
         """
         Return all CreateDbTasks for this job
         """
-        return [t for t in self.tasks if isinstance(t, tasks.CreateDbTask or isinstance(t, tasks.CreateDbTaskRegression))]
+        return [t for t in self.tasks if isinstance(t, tasks.CreateDbTask) or isinstance(t, tasks.CreateDbTaskRegression)]
 
     def train_db_task(self):
         """

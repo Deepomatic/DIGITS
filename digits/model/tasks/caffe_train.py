@@ -148,8 +148,8 @@ class CaffeTrainTask(TrainTask):
             #     if addThis:
             #         accuracy_layers.append(layer)
             else:
-                # if layer.type == 'InnerProduct' and not layer.inner_product_param.num_output:
-                #     layer.inner_product_param.num_output = int(self.get_labels_regression()[0])
+                if layer.type == 'InnerProduct' and not layer.inner_product_param.num_output and len(self.get_labels(True)) == 1:
+                    layer.inner_product_param.num_output = len(self.get_labels(True)[0])
                 hidden_layers.layer.add().CopyFrom(layer)
                 if len(layer.bottom) == 1 and len(layer.top) == 1 and layer.bottom[0] == layer.top[0]:
                     pass
@@ -223,9 +223,9 @@ class CaffeTrainTask(TrainTask):
                 label_layer["train"][i].data_param.batch_size = constants.DEFAULT_BATCH_SIZE
             
 
-            #HACK
-            if self.crop_size:                
-                label_train_data_layer.transform_param.crop_size = self.crop_size
+            # #HACK
+            # if self.crop_size:                
+            #     label_train_data_layer.transform_param.crop_size = self.crop_size
 
             if has_val_set:
                 val_data_layer = train_val_network.layer.add(type = 'Data', name = 'data')

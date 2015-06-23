@@ -22,7 +22,7 @@ def generic(job, form, files, labels):
     ### labels
 
 
-    job.labels_file = labels#os.path.join(job.dir(), utils.constants.LABELS_FILE) ##hack
+    job.labels_file = labels
 
     shuffle = bool(form.textfile_shuffle.data)
     fd = open(files, "r")
