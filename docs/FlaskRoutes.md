@@ -1,6 +1,6 @@
 # Flask Routes
 
-*Generated Jun 18, 2015*
+*Generated Jun 23, 2015*
 
 Documentation on the various routes used internally for the web application.
 
@@ -198,7 +198,7 @@ Location: [`digits/dataset/images/classification/views.py@207`](../digits/datase
 
 Methods: **POST**
 
-Location: [`digits/dataset/images/regression/views.py@160`](../digits/dataset/images/regression/views.py#L160)
+Location: [`digits/dataset/images/regression/views.py@167`](../digits/dataset/images/regression/views.py#L167)
 
 ### `/datasets/images/regression/new`
 
@@ -206,7 +206,7 @@ Location: [`digits/dataset/images/regression/views.py@160`](../digits/dataset/im
 
 Methods: **GET**
 
-Location: [`digits/dataset/images/regression/views.py@150`](../digits/dataset/images/regression/views.py#L150)
+Location: [`digits/dataset/images/regression/views.py@157`](../digits/dataset/images/regression/views.py#L157)
 
 ### `/datasets/images/resize-example`
 
@@ -250,7 +250,7 @@ Methods: **GET**, **POST**
 
 Arguments: `job_id`, `extension` (`tar.gz`)
 
-Location: [`digits/model/views.py@156`](../digits/model/views.py#L156)
+Location: [`digits/model/views.py@167`](../digits/model/views.py#L167)
 
 ### `/models/<job_id>/download.<extension>`
 
@@ -260,7 +260,7 @@ Methods: **GET**, **POST**
 
 Arguments: `job_id`, `extension`
 
-Location: [`digits/model/views.py@156`](../digits/model/views.py#L156)
+Location: [`digits/model/views.py@167`](../digits/model/views.py#L167)
 
 ### `/models/customize`
 
@@ -384,7 +384,7 @@ Location: [`digits/model/images/regression/views.py@349`](../digits/model/images
 
 Methods: **POST**
 
-Location: [`digits/model/views.py@101`](../digits/model/views.py#L101)
+Location: [`digits/model/views.py@112`](../digits/model/views.py#L112)
 
 ### `/models/visualize-network`
 
@@ -392,7 +392,7 @@ Location: [`digits/model/views.py@101`](../digits/model/views.py#L101)
 
 Methods: **POST**
 
-Location: [`digits/model/views.py@88`](../digits/model/views.py#L88)
+Location: [`digits/model/views.py@99`](../digits/model/views.py#L99)
 
 ## Util
 

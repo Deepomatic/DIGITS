@@ -5,7 +5,7 @@ import tarfile
 import cPickle
 import PIL.Image
 import glob
-
+import sys
 from downloader import DataDownloader
 
 class EspgameDownloader(DataDownloader):
@@ -74,7 +74,8 @@ class EspgameDownloader(DataDownloader):
             data_file = open(data_path, "w")
             files = glob.glob(os.path.join(self.outdir, "ESP-ImageSet/LABELS/*.desc"))
             data_file.write('200\n')
-
+            size = len(files)
+            i = 0
             for f in files:
                 res = os.path.splitext(f)[0].replace("LABELS", "images")
                 with open(f, 'r') as fd:
@@ -82,15 +83,19 @@ class EspgameDownloader(DataDownloader):
                     for l in self.labels:
                         if l in lines:
                             res = res + ' 1'
-                            print res
                         else:
                             res = res + ' -1'
 
                     res += "\n"
-                    fd.close()
+                fd.close()   
+                i += 1
+                if i % 100 == 0:       
+                    sys.stdout.write("- Extracting tags: {0}%  \r".format(round(i/float(size) * 100, 2)))
+                    sys.stdout.flush()
+
                 data_file.write(res)
             data_file.close()
-            print "Done."
+            print "\nDone."
 
 
 
