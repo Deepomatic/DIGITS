@@ -76,7 +76,7 @@ class EspgameDownloader(DataDownloader):
             data_file.write('200\n')
 
             for f in files:
-                res = os.path.splitext(f)[0]
+                res = os.path.splitext(f)[0].replace("LABELS", "images")
                 with open(f, 'r') as fd:
                     lines = [line.rstrip('\n') for line in fd]
                     for l in self.labels:

@@ -127,6 +127,7 @@
                 <!-- Nav tabs -->
                 <ul class="nav nav-tabs" id="db-tabs" role="tablist">
                     <li><a href="#db-regression" role="tab" data-toggle="tab">Use Image Folder</a></li>
+                    <li><a href="#db-upload" role="tab" data-toggle="tab">Use files path </a></li>
                 </ul>
 
                 <!-- Tab panes -->
@@ -145,45 +146,92 @@
                                         <td class="form-group{{' has-error' if form.input_files.errors}}">
                                             {{ form.input_files(class='form-control') }}
                                         </td>
-                                    </tr>
-                                    <tr>
-                                        <td><b>Labels</b> <span name="text_file_explanation"
-                                        class="explanation-tooltip glyphicon glyphicon-question-sign"
-                                        data-container="body"
-                                        title="Each line in the file should be formatted as '<id> <name>' where <id> is the index of the label, and the <name> is string"
-                                        ></span></td>
+                                </tr>
+                                <tr>
+                                    <td><b>Labels</b> <span name="text_file_explanation"
+                                    class="explanation-tooltip glyphicon glyphicon-question-sign"
+                                    data-container="body"
+                                    title="Each line in the file should be formatted as '<id> <name>' where <id> is the index of the label, and the <name> is string"
+                                    ></span></td>
 
-                                        <td class="form-group{{' has-error' if form.input_files.errors}}">
-                                            {{ form.input_labels(class='form-control') }}
+                                    <td class="form-group{{' has-error' if form.input_files.errors}}">
+                                        {{ form.input_labels(class='form-control') }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Percent validation
+                                        <td class="form-group{{' has-error' if form.percent_val.errors}}">
+                                            {{ form.percent_val(class='form-control') }}
                                         </td>
                                     </tr>
-                                    <tr>
-                                        <td>Percent validation
-                                            <td class="form-group{{' has-error' if form.percent_val.errors}}">
-                                                {{ form.percent_val(class='form-control') }}
-                                            </td>
-                                        </tr>
-                                    <tr>
-                                        <td>Percent test
-                                            <td class="form-group{{' has-error' if form.percent_val.errors}}">
-                                                {{ form.percent_test(class='form-control') }}
-                                            </td>    
-                                    </tr>
-
-                                    </table>
-
-                                </div>
-                                <div class="row">
-                                    <div class="col-sm-12 form-group{{ ' has-error' if form.textfile_shuffle.errors else '' }}">
-                                        {{ form.textfile_shuffle }}
-                                        {{ form.textfile_shuffle.label }}
-                                        <span name="textfile_shuffle_explanation"
+                                <tr>
+                                    <td>Percent test
+                                        <td class="form-group{{' has-error' if form.percent_val.errors}}">
+                                            {{ form.percent_test(class='form-control') }}
+                                        </td>    
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-12 form-group{{ ' has-error' if form.textfile_shuffle.errors else '' }}">
+                                {{ form.textfile_shuffle }}
+                                {{ form.textfile_shuffle.label }}
+                                <span name="textfile_shuffle_explanation"
+                                class="explanation-tooltip glyphicon glyphicon-question-sign"
+                                data-container="body"
+                                title="Shuffle the list of images before creating the database."
+                                ></span>
+                            </div>
+                        </div>
+                    </div> 
+                    <div class="tab-pane" id="db-upload">
+                        <div class="row">
+                            <table class="table">
+                                <tr>
+                                    <td><b>Input File</b> <span name="text_file_explanation"
                                         class="explanation-tooltip glyphicon glyphicon-question-sign"
                                         data-container="body"
-                                        title="Shuffle the list of images before creating the database."
-                                        ></span>
-                                    </div>
-                                </div>
+                                        title="Each line in the file should be formatted as '<PATH> <LABEL>' where <PATH> specifies image path on the local filesystem, and the <LABEL> is a vector of numeric label"
+                                        ></span></td>
+
+                                        <td class="form-group{{' has-error' if form.textfile_filesPath.errors}}">
+                                            {{ form.textfile_filesPath(class='form-control') }}
+                                        </td>
+                                </tr>
+                                <tr>
+                                    <td><b>Labels</b> <span name="text_file_explanation"
+                                    class="explanation-tooltip glyphicon glyphicon-question-sign"
+                                    data-container="body"
+                                    title="Each line in the file should be formatted as '<id> <name>' where <id> is the index of the label, and the <name> is string"
+                                    ></span></td>
+
+                                    <td class="form-group{{' has-error' if form.textfile_labelsPath.errors}}">
+                                        {{ form.textfile_labelsPath(class='form-control') }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Percent validation
+                                        <td class="form-group{{' has-error' if form.percent_val.errors}}">
+                                            {{ form.percent_val(class='form-control') }}
+                                        </td>
+                                    </tr>
+                                <tr>
+                                    <td>Percent test
+                                        <td class="form-group{{' has-error' if form.percent_val.errors}}">
+                                            {{ form.percent_test(class='form-control') }}
+                                        </td>    
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-12 form-group{{ ' has-error' if form.textfile_shuffle.errors else '' }}">
+                                {{ form.textfile_shuffle }}
+                                {{ form.textfile_shuffle.label }}
+                                <span name="textfile_shuffle_explanation"
+                                class="explanation-tooltip glyphicon glyphicon-question-sign"
+                                data-container="body"
+                                title="Shuffle the list of images before creating the database."
+                                ></span>
                             </div>
                         </div>
                     </div>
@@ -192,11 +240,13 @@
                 <script>
                 function update_db_tab(tabName) {
                     $('input[name=method]').val( tabName );
+                    console.log(tabName);
                 }
                 $('#db-tabs a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
                     console.log(e);
                     parts = e.target.href.split('-');
                     update_db_tab( parts[parts.length-1] );
+                    console.log(parts[parts.length-1]);
                 });
                 $('#db-tabs a[href="#db-{{ form.method.data }}"]').tab('show');
                 </script>
@@ -213,8 +263,10 @@
 
             </form>
 
-            <script>
-            $(".explanation-tooltip").tooltip();
-            </script>
 
-            {% endblock %}
+
+    <script>
+        $('#db-tabs a[href="#db-{{ form.method.data }}"]').tab('show');
+                    $(".explanation-tooltip").tooltip();
+    </script>
+    {% endblock %}

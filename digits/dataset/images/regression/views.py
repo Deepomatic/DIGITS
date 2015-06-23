@@ -14,24 +14,18 @@ from job import ImageRegressionDatasetJob
 
 NAMESPACE = '/datasets/images/regression'
 
-def from_files(job, form):
+
+def generic(job, form, files, labels):
     """
     Add tasks for creating a dataset by reading textfiles
     """
     ### labels
 
-    flask.request.files[form.input_files.name].save(
-            os.path.join(job.dir(), utils.constants.TMP_FILE)
-            )
 
-    flask.request.files[form.input_labels.name].save(
-        os.path.join(job.dir(), utils.constants.LABELS_FILE)
-        )
-
-    job.labels_file = os.path.join(job.dir(), utils.constants.LABELS_FILE) ##hack
+    job.labels_file = labels#os.path.join(job.dir(), utils.constants.LABELS_FILE) ##hack
 
     shuffle = bool(form.textfile_shuffle.data)
-    fd = open(os.path.join(job.dir(), utils.constants.TMP_FILE), "r")
+    fd = open(files, "r")
     content = fd.read().split('\n')
     label = content[0]
     content = content[1:]
@@ -40,7 +34,6 @@ def from_files(job, form):
     number_images = len(content)
     fd.close()
 
-    job.labels_file = os.path.join(job.dir(), utils.constants.LABELS_FILE) ##hack
     job.number_labels = label.split(' ')
 
     tmp_path = "/tmp/" + job.dir().split("/")[-1]
@@ -144,6 +137,24 @@ def from_files(job, form):
             )
         )
 
+def from_files(job, form):
+    files = os.path.join(job.dir(), utils.constants.TMP_FILE)
+    labels = os.path.join(job.dir(), utils.constants.LABELS_FILE)
+    flask.request.files[form.input_files.name].save(
+            files
+            )
+
+    flask.request.files[form.input_labels.name].save(
+        labels
+        )
+    
+    generic(job, form, files, labels)
+
+def from_path(job, form):
+    print form.textfile_filesPath.data
+    print form.textfile_labelsPath.data
+
+
 
 
 @app.route(NAMESPACE + '/new', methods=['GET'])
@@ -184,6 +195,8 @@ def image_regression_dataset_create():
 
         if form.method.data == 'regression':
             from_files(job, form)
+        elif form.method.data == 'upload':
+            from_path(job, form)
         scheduler.add_job(job)
         return flask.redirect(flask.url_for('datasets_show', job_id=job.id()))
 

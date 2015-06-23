@@ -12,6 +12,14 @@ class ImageRegressionDatasetForm(ImageDatasetForm):
     Defines the form used to create a new ImageClassificationDatasetJob
     """
 
+    method = wtforms.SelectField(u'Dataset type',
+        choices = [
+            ('folder', 'Folder'),
+            ('textfile', 'Textfiles'),
+            ],
+        default='folder',
+        )
+
     def required_if_method(value):
 
         def _required(form, field):
@@ -73,3 +81,21 @@ class ImageRegressionDatasetForm(ImageDatasetForm):
 
     textfile_shuffle = wtforms.BooleanField('Shuffle lines',
             default = True)
+
+
+    ## file path
+    textfile_filesPath = wtforms.StringField(u'Files file path',
+            validators=[
+                validate_required_iff(
+                    method='textfile'
+                    )
+                ]
+            )
+
+    textfile_labelsPath = wtforms.StringField(u'Labels file path',
+            validators=[
+                validate_required_iff(
+                    method='textfile'
+                    )
+                ]
+            )
