@@ -127,16 +127,15 @@ class CaffeTrainTask(TrainTask):
         loss_layers = []
         accuracy_layers = []
         for layer in self.network.layer:
-            print layer.type
             assert layer.type not in ['MemoryData', 'HDF5Data', 'ImageData'], 'unsupported data layer type'
-            # if layer.type == 'Data':
-            #     for rule in layer.include:
-            #         if rule.phase == caffe_pb2.TRAIN:
-            #             assert train_data_layer is None, 'cannot specify two train data layers'
-            #             train_data_layer = layer
-            #         elif rule.phase == caffe_pb2.TEST:
-            #             assert val_data_layer is None, 'cannot specify two test data layers'
-            #             val_data_layer = layer
+            if layer.type == 'Data':
+                for rule in layer.include:
+                    if rule.phase == caffe_pb2.TRAIN and layer.name.lower() == "data":
+                        assert train_data_layer is None, 'cannot specify two train data layers'
+                        train_data_layer = layer
+                    elif rule.phase == caffe_pb2.TEST and layer.name.lower() == "data":
+                        assert val_data_layer is None, 'cannot specify two test data layers'
+                        val_data_layer = layer
             if layer.type == 'EuclideanLoss':
                 loss_layers.append(layer)
             # elif layer.type == 'Accuracy':
@@ -184,11 +183,12 @@ class CaffeTrainTask(TrainTask):
         train_val_network = caffe_pb2.NetParameter()
         label_layer = {"train": [], "val" : []}
         # data layers
+
+        max_crop_size = min(self.dataset.image_dims[0], self.dataset.image_dims[1])
         if train_data_layer is not None:
             if train_data_layer.HasField('data_param'):
                 assert not train_data_layer.data_param.HasField('source'), "don't set the data_param.source"
                 assert not train_data_layer.data_param.HasField('backend'), "don't set the data_param.backend"
-            max_crop_size = min(self.dataset.image_dims[0], self.dataset.image_dims[1])
             if self.crop_size:
                 assert self.crop_size <= max_crop_size, 'crop_size is larger than the image size'
                 train_data_layer.transform_param.crop_size = self.crop_size
@@ -215,6 +215,9 @@ class CaffeTrainTask(TrainTask):
             train_data_layer.top.append('data')
             train_data_layer.include.add(phase = caffe_pb2.TRAIN)
             train_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+            if self.crop_size:
+                assert self.crop_size <= max_crop_size, 'crop_size is larger than the image size'
+                train_data_layer.transform_param.crop_size = self.crop_size
 
             for i, lab in enumerate(self.get_labels(True)):
                 label_layer["train"].append(train_val_network.layer.add(type = 'Data', name = 'label' + str(i)))
@@ -232,15 +235,15 @@ class CaffeTrainTask(TrainTask):
                 val_data_layer.top.append('data')
                 val_data_layer.include.add(phase = caffe_pb2.TEST)
                 val_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+                if self.crop_size:
+                    assert self.crop_size <= max_crop_size, 'crop_size is larger than the image size'
+                    val_data_layer.transform_param.crop_size = self.crop_size
 
                 for i, lab in enumerate(self.get_labels(True)):
                     label_layer["val"].append(train_val_network.layer.add(type = 'Data', name = 'label' + str(i)))
                     label_layer["val"][i].top.append('label' + str(i))
                     label_layer["val"][i].include.add(phase = caffe_pb2.TEST)
                     label_layer["val"][i].data_param.batch_size = constants.DEFAULT_BATCH_SIZE
-
-        print self.dataset.train_db_task()
-        print dir(self.dataset)
 
         train_data_layer.data_param.source = self.dataset.path(self.dataset.train_db_task().db_name + "/data_lmdb/")
         train_data_layer.data_param.backend = caffe_pb2.DataParameter.LMDB
