@@ -967,28 +967,14 @@ class CaffeTrainTask(TrainTask):
                     predictions.append( (self.get_labels()[i], scores[i]) )
 
         elif isinstance(self.dataset, ImageRegressionDatasetJob):
-            rep = {}
-            predictions = {"predictions" : rep, "labels" : self.get_labels(True)[0]}
-            columns = []
-            columns.append(['x'] + self.get_labels(True)[0])
-            for line in net.outputs:
+            predictions = {}
+            for idx, line in enumerate(net.outputs):
+                labels = self.get_labels(True)[idx]
+                predictions[line] = []
                 scores = output[line].flatten()
-                rep[line] = []
                 indices = (-scores).argsort()
-                indices.sort()
-                tmp = []
-                tmp.append(line)
                 for i in indices:
-                    rep[line].append((i, scores[i])) #david
-                    tmp.append(np.float64(scores[i]))
-                columns.append(tmp)
-            predictions['data'] = {
-                'x' : 'x',
-                'columns': columns,
-                'type': 'bar'
-                }
-
-
+                    predictions[line].append([labels[i], np.float64(scores[i])])
         # add visualizations
         visualizations = []
         if layers and layers != 'none':
