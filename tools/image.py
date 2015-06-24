@@ -62,7 +62,7 @@ def load_image(path, color = True):
         elif image.mode == 'L' and color:
             image = image.convert('RGB')
 
-    except Exception as e:
+    except Exception:
         image = None
 
     return image

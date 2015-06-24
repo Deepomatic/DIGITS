@@ -128,7 +128,9 @@ def image_regression_model_create():
                                     % (form.previous_networks.data, epoch))
                         if not (os.path.exists(pretrained_model)):
                             raise werkzeug.exceptions.BadRequest(
-                                    "Pretrained_model for the selected epoch doesn't exists. May be deleted by another user/process. Please restart the server to load the correct pretrained_model details")
+                                    """Pretrained_model for the selected epoch doesn't exist. May be deleted 
+                                    by another user/process. Please restart the server to load the correct 
+                                    pretrained_model details""")
                     break
 
         elif form.method.data == 'custom':

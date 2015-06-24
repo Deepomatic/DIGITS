@@ -6,14 +6,15 @@ import logging
 import PIL.Image
 # 82.Image as PIL
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+try:
+    import digits
+except ImportError:
+    # Add path for DIGITS package
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import digits.config
 digits.config.load_config()
-from digits.config import config_value
 from digits import utils, log
 
-import caffe
 from caffe.proto import caffe_pb2
 
 import thread
