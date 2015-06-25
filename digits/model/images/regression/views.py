@@ -265,9 +265,7 @@ def image_regression_model_classify_one():
     layers = 'none'
     if 'show_visualizations' in flask.request.form and flask.request.form['show_visualizations']:
         layers = 'all'
-
     predictions, visualizations = job.train_task().infer_one(image, snapshot_epoch=epoch, layers=layers)
-
     if request_wants_json():
         return flask.jsonify({'predictions': predictions})
     else:

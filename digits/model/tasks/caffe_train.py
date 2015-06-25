@@ -955,11 +955,12 @@ class CaffeTrainTask(TrainTask):
         # run inference
         net.blobs['data'].data[...] = preprocessed
         output = net.forward()
-        scores = output[net.outputs[-1]].flatten()
-        indices = (-scores).argsort()
+        # scores = output[net.outputs[-1]].flatten()
+        # indices = (-scores).argsort()
         predictions = []
-        # for i in indices:
-        #     predictions.append( (labels[i], scores[i]) )
+        print "Classification", isinstance(self.dataset, ImageClassificationDatasetJob) 
+        print "Regression", isinstance(self.dataset, ImageRegressionDatasetJob)
+
         if isinstance(self.dataset, ImageClassificationDatasetJob): 
             scores = output[net.outputs[-1]].flatten()
             indices = (-scores).argsort()

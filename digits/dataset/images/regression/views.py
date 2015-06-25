@@ -193,7 +193,10 @@ def image_regression_dataset_create():
             from_files(job, form)
         elif form.method.data == 'upload':
             from_path(job, form)
+
         scheduler.add_job(job)
+        if request_wants_json():
+            return flask.jsonify(job.json_dict())
         return flask.redirect(flask.url_for('datasets_show', job_id=job.id()))
 
     except:
