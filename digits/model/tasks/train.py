@@ -6,6 +6,7 @@ from collections import OrderedDict, namedtuple
 
 import gevent
 import flask
+import json
 
 from digits import utils, device_query
 from digits.task import Task
@@ -407,29 +408,32 @@ class TrainTask(Task):
 
         labels = []
         if isRegression:
-            nbr_diff_labels = 0
-            with open(self.dataset.path("train.txt"), 'r') as fd:
-                line = fd.readline()
-                nbr_diff_labels = line.strip().split()
+            #nbr_diff_labels = 0
+            # with open(self.dataset.path("train.txt"), 'r') as fd:
+            #     line = fd.readline()
+            #     nbr_diff_labels = line.strip().split()
 
             with open(self.dataset.path(self.dataset.labels_file)) as infile:
-                idx = 0
-                count = 0
-                lbls = []
-                labels = []
-                for line in infile:
-                    label = line.strip()
-                    if label:
-                        lbls.append(label)
-                    count += 1
-                    if count == int(nbr_diff_labels[idx]):
-                        labels.append(lbls)
-                        lbls = []
-                        count = 0
-                        idx += 1
-                    if idx >= len(nbr_diff_labels):
-                        print idx, len(nbr_diff_labels)
-                        break
+                content = json.loads(infile.read())
+                labels = content 
+            # with open(self.dataset.path(self.dataset.labels_file)) as infile:
+            #     idx = 0
+            #     count = 0
+            #     lbls = []
+            #     labels = []
+            #     for line in infile:
+            #         label = line.strip()
+            #         if label:
+            #             lbls.append(label)
+            #         count += 1
+            #         if count == int(nbr_diff_labels[idx]):
+            #             labels.append(lbls)
+            #             lbls = []
+            #             count = 0
+            #             idx += 1
+            #         if idx >= len(nbr_diff_labels):
+            #             print idx, len(nbr_diff_labels)
+            #             break
             # return self._labels
         else:
             with open(self.dataset.path(self.dataset.labels_file)) as infile:

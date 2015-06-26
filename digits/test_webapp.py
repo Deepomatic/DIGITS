@@ -89,8 +89,9 @@ def create_dummy_regression_dataset(data_path):
         fd.write("\n")
 
     with open(os.path.join(data_path, "labels.txt"), "w") as fd:
-        for key in labels:
-            fd.write(key + "\n")
+        fd.write(json.dumps([labels.keys()]))
+        # for key in labels:
+        #     fd.write(key + "\n")
 
 
     return (os.path.join(data_path, "files.txt"), os.path.join(data_path, "labels.txt"), img_path)

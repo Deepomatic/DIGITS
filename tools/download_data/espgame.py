@@ -7,6 +7,7 @@ import PIL.Image
 import glob
 import sys
 from downloader import DataDownloader
+import json
 
 class EspgameDownloader(DataDownloader):
     """
@@ -58,12 +59,12 @@ class EspgameDownloader(DataDownloader):
 
             print "- Writing labels.txt..."
             with open(label_path, "w") as fd:
-                for l in self.labels:
-                    fd.write(l+'\n')
-                fd.close()
+                fd.write(json.dumps([self.labels]))
+                # for l in self.labels:
+                #     fd.write(l+'\n')
         else:
             with open(label_path, "r") as fd:
-                self.labels = [line.rstrip('\n') for line in fd]
+                self.labels = json.loads(fd.read())[0]#[line.rstrip('\n') for line in fd]
 
 
     def __extractData(self):
