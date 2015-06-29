@@ -250,6 +250,10 @@ def image_regression_model_classify_one():
     db_task = job.train_task().dataset.train_db_task()
     height = db_task.image_dims[0]
     width = db_task.image_dims[1]
+
+    rawIMG = np.asarray(image)
+    rawIMG = utils.image2.Image(rawIMG)
+
     if job.train_task().crop_size:
         height = job.train_task().crop_size
         width = job.train_task().crop_size
@@ -265,15 +269,30 @@ def image_regression_model_classify_one():
     layers = 'none'
     if 'show_visualizations' in flask.request.form and flask.request.form['show_visualizations']:
         layers = 'all'
-    predictions, visualizations = job.train_task().infer_one(image, snapshot_epoch=epoch, layers=layers)
-    if request_wants_json():
-        return flask.jsonify({'predictions': predictions})
-    else:
-        return flask.render_template('models/images/regression/classify_one.html',
-                image_src       = utils.image.embed_image_html(image),
-                predictions     = predictions,
-                visualizations  = visualizations,
-                )
+    predictions, visualizations = job.train_task().infer_one(image, snapshot_epoch=epoch, layers=layers, rawIMG=rawIMG)
+    # if request_wants_json():
+    #     return flask.jsonify({'predictions': predictions})
+    # else:
+    #     return flask.render_template('models/images/regression/classify_one.html',
+    #             image_src       = utils.image.embed_image_html(image),
+    #             predictions     = predictions,
+    #             visualizations  = visualizations,
+    #             )
+
+
+    rawIMG.resize((width, height))
+    width, height = rawIMG.size()
+    boxes = predictions["boxes"]
+    predictions["boxes"] = []
+    for b in boxes:
+        predictions["boxes"].append({ 'top': b[1] * height, 'left': b[0] * width, 'width': width * (b[2] - b[0]), 'height': height * (b[3] - b[1]), 'borderColor': 'rgba(255,0,0)', 'fill': 'rgba(255,0,0,0.35)', 'transparentCorners': False })
+
+    return flask.render_template('models/images/regression/classify_one.html',
+            image_src       = utils.image.embed_image_html(image),
+            raw_img         = utils.image.embed_image_html(rawIMG.img),
+            predictions     = predictions,
+            visualizations  = visualizations,
+            )
 
 @app.route(NAMESPACE + '/classify_many', methods=['POST'])
 @autodoc('models')

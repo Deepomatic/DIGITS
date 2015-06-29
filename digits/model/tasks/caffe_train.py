@@ -17,6 +17,7 @@ from digits.status import Status
 from digits import utils
 from digits.utils import subclass, override, constants
 from digits.dataset import ImageClassificationDatasetJob, ImageRegressionDatasetJob
+from digits.bbox import box_digits
 
 # NOTE: Increment this everytime the pickled object changes
 PICKLE_VERSION = 2
@@ -136,7 +137,7 @@ class CaffeTrainTask(TrainTask):
                     elif rule.phase == caffe_pb2.TEST and layer.name.lower() == "data":
                         assert val_data_layer is None, 'cannot specify two test data layers'
                         val_data_layer = layer
-            if layer.type == 'EuclideanLoss':
+            if layer.type == 'EuclideanLoss' or layer.type.lower() == 'jaccardloss':
                 loss_layers.append(layer)
             # elif layer.type == 'Accuracy':
             #     addThis = True
@@ -915,15 +916,16 @@ class CaffeTrainTask(TrainTask):
         return False
 
     @override
-    def infer_one(self, data, snapshot_epoch=None, layers=None):
+    def infer_one(self, data, snapshot_epoch=None, layers=None, rawIMG=None):
         if isinstance(self.dataset, ImageClassificationDatasetJob) or isinstance(self.dataset, ImageRegressionDatasetJob):
             return self.classify_one(data,
                     snapshot_epoch=snapshot_epoch,
                     layers=layers,
+                    rawIMG=rawIMG
                     )
         raise NotImplementedError()
 
-    def classify_one(self, image, snapshot_epoch=None, layers=None):
+    def classify_one(self, image, snapshot_epoch=None, layers=None, rawIMG=None):
         """
         Classify an image
         Returns (predictions, visualizations)
@@ -964,14 +966,26 @@ class CaffeTrainTask(TrainTask):
                     predictions.append( (self.get_labels()[i], scores[i]) )
 
         elif isinstance(self.dataset, ImageRegressionDatasetJob):
-            predictions = {}
-            for idx, line in enumerate(net.outputs):
-                labels = self.get_labels(True)[idx]
-                predictions[line] = []
+            rep = {}
+            predictions = {"predictions" : rep, "labels" : self.get_labels(True)[0]}
+            columns = []
+            columns.append(['x'] + self.get_labels(True)[0])
+            for line in net.outputs:
                 scores = output[line].flatten()
+                rep[line] = []
                 indices = (-scores).argsort()
+                indices.sort()
+                tmp = []
+                tmp.append(line)
                 for i in indices:
-                    predictions[line].append([labels[i], np.float64(scores[i])])
+                    rep[line].append((i, scores[i])) #david
+                    tmp.append(np.float64(scores[i]))
+                columns.append(tmp)
+            predictions['data'] = {
+                'x' : 'x',
+                'columns': columns,
+                'type': 'bar'
+                }
         # add visualizations
         visualizations = []
         if layers and layers != 'none':
@@ -1035,6 +1049,18 @@ class CaffeTrainTask(TrainTask):
                                 added_activations.append(top)
             else:
                 raise NotImplementedError
+
+        if isinstance(self.dataset, ImageRegressionDatasetJob):
+            blob = caffe.proto.caffe_pb2.BlobProto()
+            data = open(self.dataset.train_db_task().mean_file , 'rb' ).read()
+            blob.ParseFromString(data)
+            arr = np.array( caffe.io.blobproto_to_array(blob) )
+            mean_regression = arr[0]
+
+            im_base = rawIMG
+    
+        predictions["boxes"] =  box_digits("/datasets/OverFeat/Digits/classification/memory_shoes.prototxt","/datasets/OverFeat/Digits/classification/classification_shoes.caffemodel",net,im_base,mean_regression,1)
+
 
         return (predictions, visualizations)
 
