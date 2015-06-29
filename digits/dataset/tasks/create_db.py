@@ -428,12 +428,13 @@ class CreateDbTaskRegression(Task):
 
         if line.find("--Done--") != -1:
             self.progress = 1
-
-
-
             return True
 
         return True
+
+    @override
+    def after_run(self):
+        self.input_file = ".".join(self.input_file.split(".")[:-1])
 
     def get_labels(self):
         """

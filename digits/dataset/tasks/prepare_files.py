@@ -49,6 +49,9 @@ class ClearFiles(Task):
     def task_arguments(self, resources):
         args = ["rm", '-rf',
                 self.tmp_folder,
+                "{}/{}".format(self.job_dir, "train.txt.tmp"),
+                "{}/{}".format(self.job_dir, "val.txt.tmp"),
+                "{}/{}".format(self.job_dir, "test.txt.tmp"),
                 ]
 
         print " ".join(args)

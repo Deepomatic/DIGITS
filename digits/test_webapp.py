@@ -1284,7 +1284,7 @@ class TestModelRegressionCreation(WebappBaseTest):
         assert self.delete_model(job_id) == 200, 'delete failed'
         assert not self.model_exists(job_id), 'model exists after delete'
 
-    # def test_snapshot_interval_2(self):
+    # def test_snapshot_interval_2(self): ## find why !
     #     """model - snapshot_interval 2"""
     #     job_id = self.create_quick_regression_model(self.dataset_id, train_epochs=1, snapshot_interval=0.5)
     #     with open("output.log", "w") as fd:

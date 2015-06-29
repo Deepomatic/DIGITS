@@ -38,10 +38,13 @@ def generic(job, form, files, labels):
 
     tmp_path = "/tmp/" + job.dir().split("/")[-1]
     new_content = []
+    old_content = content# In order to keep the real path
     for line in content:
         tmp = line.split(" ")
         tmp[0] = tmp_path + "/" + tmp[0]
         new_content.append(" ".join(tmp))
+
+
 
     content = new_content
     percent_val = int(form.percent_val.data)
@@ -56,6 +59,19 @@ def generic(job, form, files, labels):
     with open(os.path.join(tmp_path, "files.txt"), "w") as fd:
         fd.write("\n".join(content))
 
+    with open(os.path.join(job.dir(), utils.constants.TRAIN_FILE + ".tmp"), "w") as fd:
+        fd.write("\n".join([label] + data_train))
+
+    with open(os.path.join(job.dir(), utils.constants.VAL_FILE + ".tmp"), "w") as fd:
+        fd.write("\n".join([label] + data_val))
+
+    with open(os.path.join(job.dir(), utils.constants.TEST_FILE + ".tmp"), "w") as fd:
+        fd.write("\n".join([label] + data_test))
+
+
+    data_val = old_content[:int(number_images * percent_val * 0.01)]
+    data_test = old_content[len(data_val):len(data_val) + int(number_images * percent_test * 0.01)]
+    data_train = old_content[len(data_val) + len(data_test):]
     with open(os.path.join(job.dir(), utils.constants.TRAIN_FILE), "w") as fd:
         fd.write("\n".join([label] + data_train))
 
@@ -64,6 +80,7 @@ def generic(job, form, files, labels):
 
     with open(os.path.join(job.dir(), utils.constants.TEST_FILE), "w") as fd:
         fd.write("\n".join([label] + data_test))
+
 
     image_folder = None
 
@@ -83,7 +100,7 @@ def generic(job, form, files, labels):
     createDbList = [
         tasks.CreateDbTaskRegression(
                 job_dir     = job.dir(),
-                input_file  = utils.constants.TRAIN_FILE,
+                input_file  = utils.constants.TRAIN_FILE + ".tmp",
                 db_name     = utils.constants.TRAIN_DB,
                 image_dims  = job.image_dims,
                 image_folder= image_folder,
@@ -96,7 +113,7 @@ def generic(job, form, files, labels):
                 ),
         tasks.CreateDbTaskRegression(
                 job_dir     = job.dir(),
-                input_file  = utils.constants.VAL_FILE,
+                input_file  = utils.constants.VAL_FILE + ".tmp",
                 db_name     = utils.constants.VAL_DB,
                 image_dims  = job.image_dims,
                 image_folder= image_folder,
@@ -113,7 +130,7 @@ def generic(job, form, files, labels):
         createDbList.append(
             tasks.CreateDbTaskRegression(
                 job_dir     = job.dir(),
-                input_file  = utils.constants.TEST_FILE,
+                input_file  = utils.constants.TEST_FILE + ".tmp",
                 db_name     = utils.constants.TEST_DB,
                 image_dims  = job.image_dims,
                 image_folder= image_folder,
