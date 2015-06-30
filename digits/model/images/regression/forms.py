@@ -7,7 +7,12 @@ from ..forms import ImageModelForm
 
 class ImageRegressionModelForm(ImageModelForm):
     """
-    Defines the form used to create a new ImageClassificationModelJob
+    Defines the form used to create a new ImageRegressionModelJob
     """
-    pass
+    learning_rate = wtforms.FloatField('Base Learning Rate',
+            default = 0.0001,
+            validators = [
+                validators.NumberRange(min=0),
+                ]
+            )
 
