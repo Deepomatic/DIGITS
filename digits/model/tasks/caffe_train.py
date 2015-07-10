@@ -14,7 +14,7 @@ from caffe.proto import caffe_pb2
 from train import TrainTask
 from digits.config import config_value
 from digits.status import Status
-from digits import utils
+from digits import utils, dataset
 from digits.utils import subclass, override, constants
 from digits.dataset import ImageClassificationDatasetJob, ImageRegressionDatasetJob
 from digits.bbox import box_digits
@@ -139,14 +139,16 @@ class CaffeTrainTask(TrainTask):
                         val_data_layer = layer
             if layer.type == 'EuclideanLoss' or layer.type.lower() == 'jaccardloss':
                 loss_layers.append(layer)
-            # elif layer.type == 'Accuracy':
-            #     addThis = True
-            #     if layer.accuracy_param.HasField('top_k'):
-            #         if layer.accuracy_param.top_k >= len(self.get_labels()):
-            #             self.logger.warning('Removing layer %s because top_k=%s while there are are only %s labels in this dataset' % (layer.name, layer.accuracy_param.top_k, len(self.get_labels())))
-            #             addThis = False
-            #     if addThis:
-            #         accuracy_layers.append(layer)
+            elif layer.type == 'Accuracy':
+                 addThis = True
+                 if layer.accuracy_param.HasField('top_k'):
+                     if layer.accuracy_param.top_k >= len(self.get_labels()):
+                         self.logger.warning('Removing layer %s because top_k=%s while there are are only %s labels in this dataset' % (layer.name, layer.accuracy_param.top_k, len(self.get_labels())))
+                         addThis = False
+                 if addThis:
+                     accuracy_layers.append(layer)
+	    elif layer.type == 'JaccardAccuracy':
+		accuracy_layers.append(layer)
             else:
                 if layer.type == 'InnerProduct' and not layer.inner_product_param.num_output and len(self.get_labels(True)) == 1:
                     layer.inner_product_param.num_output = len(self.get_labels(True)[0])
@@ -941,30 +943,25 @@ class CaffeTrainTask(TrainTask):
         layers -- which layer activation[s] and weight[s] to visualize
         """
         labels = self.get_labels()
-        net = self.get_net(snapshot_epoch)
-
+        net = self.get_net()
         # process image
         if image.ndim == 2:
             image = image[:,:,np.newaxis]
         preprocessed = self.get_transformer().preprocess(
                 'data', image)
-
         # reshape net input (if necessary)
         test_shape = (1,) + preprocessed.shape
         if net.blobs['data'].data.shape != test_shape:
             net.blobs['data'].reshape(*test_shape)
-
         # run inference
         net.blobs['data'].data[...] = preprocessed
         output = net.forward()
         predictions = []
-
         if isinstance(self.dataset, ImageClassificationDatasetJob): 
             scores = output[net.outputs[-1]].flatten()
             indices = (-scores).argsort()
             for i in indices:
-                    predictions.append( (self.get_labels()[i], scores[i]) )
-
+                  predictions.append( (self.get_labels()[i], scores[i]) )
         elif isinstance(self.dataset, ImageRegressionDatasetJob):
             rep = {}
             predictions = {"predictions" : rep, "labels" : self.get_labels(True)[0]}
@@ -1049,7 +1046,6 @@ class CaffeTrainTask(TrainTask):
                                 added_activations.append(top)
             else:
                 raise NotImplementedError
-
         if isinstance(self.dataset, ImageRegressionDatasetJob):
             blob = caffe.proto.caffe_pb2.BlobProto()
             data = open(self.dataset.train_db_task().mean_file , 'rb' ).read()
@@ -1058,8 +1054,8 @@ class CaffeTrainTask(TrainTask):
             mean_regression = arr[0]
 
             im_base = rawIMG
-    
-        predictions["boxes"] =  box_digits("/datasets/OverFeat/Digits/classification/memory_shoes.prototxt","/datasets/OverFeat/Digits/classification/classification_shoes.caffemodel",net,im_base,mean_regression,1)
+        
+        predictions["boxes"] =  box_digits(im_base,"/datasets/OverFeat/Digits/classification/memory_shoes.prototxt","/datasets/OverFeat/Digits/classification/classification_shoes.caffemodel","/datasets/OverFeat/Digits/classification/mean.binaryproto",net,mean_regression)
 
 
         return (predictions, visualizations)
@@ -1239,7 +1235,6 @@ class CaffeTrainTask(TrainTask):
         """
         if not self.has_model():
             return False
-
         file_to_load = None
 
         if not epoch:
@@ -1252,7 +1247,6 @@ class CaffeTrainTask(TrainTask):
                     break
         if file_to_load is None:
             raise Exception('snapshot not found for epoch "%s"' % epoch)
-
         # check if already loaded
         if self.loaded_snapshot_file and self.loaded_snapshot_file == file_to_load \
                 and hasattr(self, '_caffe_net') and self._caffe_net is not None:
@@ -1261,13 +1255,11 @@ class CaffeTrainTask(TrainTask):
         if config_value('caffe_root')['cuda_enabled'] and\
                 config_value('gpu_list'):
             caffe.set_mode_gpu()
-
         # load a new model
         self._caffe_net = caffe.Net(
                 self.path(self.deploy_file),
                 file_to_load,
                 caffe.TEST)
-
         self.loaded_snapshot_epoch = epoch
         self.loaded_snapshot_file = file_to_load
 
