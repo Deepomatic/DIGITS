@@ -213,7 +213,7 @@ def regression_boxes(net_regression,bb_all_dict,bb_class,im_resize,num_classe,me
     for n in range(N):
         bb = bb_class[n]
         input_image,shape = cropAndTransform(net_regression,im_resize,mean_regression,bb)
-        predicted_box = net_regression.forward_all(data=input_image)['fc9-'+str(1)][0] * basis_classification
+        predicted_box = net_regression.forward_all(data=input_image)['fc8-'+str(1)][0] * basis_classification
         h = shape[1]
         w = shape[0]
         pad_w = bb[0] * w

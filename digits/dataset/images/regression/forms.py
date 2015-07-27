@@ -82,7 +82,7 @@ class ImageRegressionDatasetForm(ImageDatasetForm):
 
 
     textfile_shuffle = wtforms.BooleanField('Shuffle lines',
-            default = True)
+            default = False)
 
 
 

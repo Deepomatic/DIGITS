@@ -27,15 +27,15 @@ class ImageDatasetForm(DatasetForm):
             choices=[('1', 'Grayscale'), ('3', 'Color')]
             )
     resize_width = wtforms.IntegerField(u'Resize width',
-            default=256,
+            default=227,
             validators=[validators.DataRequired()]
             )
     resize_height = wtforms.IntegerField(u'Resize height',
-            default=256,
+            default=227,
             validators=[validators.DataRequired()]
             )
     resize_mode = wtforms.SelectField(u'Resize transformation',
-            default='squash',
+            default='fill',
             choices=[
                 ('crop', 'Crop'),
                 ('squash', 'Squash'),

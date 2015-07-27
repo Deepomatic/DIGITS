@@ -40,7 +40,7 @@ class ModelForm(Form):
             validators = [
                 validators.NumberRange(min=1)
                 ],
-            default=30,
+            default=10,
             )
 
     snapshot_interval = wtforms.FloatField('Snapshot interval (in epochs)',
@@ -85,7 +85,7 @@ class ModelForm(Form):
     ### Learning rate
 
     learning_rate = wtforms.FloatField('Base Learning Rate',
-            default = 0.01,
+            default = 0.001,
             validators = [
                 validators.NumberRange(min=0),
                 ]
