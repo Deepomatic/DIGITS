@@ -12,6 +12,8 @@ from digits.dataset import tasks
 from forms import ImageRegressionDatasetForm
 from job import ImageRegressionDatasetJob
 
+import sys
+
 NAMESPACE = '/datasets/images/regression'
 
 
@@ -50,10 +52,14 @@ def generic(job, form, files, labels):
     percent_val = int(form.percent_val.data)
     percent_test = int(form.percent_test.data)
     percent_train = 100 - percent_val - percent_test
+    print percent_val,percent_test,percent_train
 
     data_val = content[:int(number_images * percent_val * 0.01)]
     data_test = content[len(data_val):len(data_val) + int(number_images * percent_test * 0.01)]
     data_train = content[len(data_val) + len(data_test):]
+    print len(data_val), len(data_test), len(data_train)
+
+    # sys.exit(0)
 
     os.mkdir(tmp_path)
     with open(os.path.join(tmp_path, "files.txt"), "w") as fd:
@@ -146,13 +152,13 @@ def generic(job, form, files, labels):
     for t in createDbList:
         job.tasks.append(t)
 
-    job.tasks.append(
-        tasks.ClearFiles(
-            job_dir = job.dir(),
-            tmp_folder = tmp_path,
-            parents = [prepare_task] + createDbList
-            )
-        )
+    # job.tasks.append(
+    #     tasks.ClearFiles(
+    #         job_dir = job.dir(),
+    #         tmp_folder = tmp_path,
+    #         parents = [prepare_task] + createDbList
+    #         )
+    #     )
 
 def from_files(job, form):
     files = os.path.join(job.dir(), utils.constants.TMP_FILE)

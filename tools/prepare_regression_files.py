@@ -36,9 +36,11 @@ def process_image(queue):
             break;
         try:
             input, output, image_height, image_width, resize_mode, encoding = queue.get(1)
+            # print "enter " +input
             img = image.load_image(input)
             img = image.resize_image(image = img, height = int(image_height), width = int(image_width), resize_mode = resize_mode)
             tmp = "/".join(output.split('/')[:-1])
+            # print input, output, tmp
             try:
                 lock.acquire()
                 mean += img
@@ -49,6 +51,7 @@ def process_image(queue):
                 lock.release()
             img = PIL.Image.fromarray(img)
             img.save(output, encoding)
+            # sys.exit(0)
         except Queue.Empty:
             time.sleep(1)
         except:
@@ -71,6 +74,7 @@ def preprocess_files(output_file, input_file, resize_mode, mean_file, image_widt
 
     with open(input_file, "r") as fd:
         for i, line in enumerate(fd):
+            # label line
             if i == 0:
                 continue
             line = line.split(" ")[0]
@@ -78,7 +82,7 @@ def preprocess_files(output_file, input_file, resize_mode, mean_file, image_widt
                 logger.error("Can't open file:{}".format(line))
                 print line
                 sys.exit(-1)
-            queue.put((line, output_list[i], image_height, image_width, resize_mode, encoding))
+            queue.put((line, output_list[i-1], image_height, image_width, resize_mode, encoding))
     
     flag = True
     logger.debug("Processing images")

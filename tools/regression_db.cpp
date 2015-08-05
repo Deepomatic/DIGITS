@@ -112,12 +112,14 @@ int main(int argc, char** argv) {
       lines.emplace_back(new_input);
     }
   }
- 
-  if (FLAGS_shuffle) {
-    // randomly shuffle data
-    LOG(INFO) << "Shuffling data";
-    shuffle(lines.begin(), lines.end());
-  }
+ //  [0.3948019742965698, 0.3316831588745117, 0.7660890817642212, 0.5581682920455933]
+ //[0.3308550185873606 0.33663366336633666 0.701363073110285 0.5631188118811881]
+
+  // if (FLAGS_shuffle) {
+  //   // randomly shuffle data
+  //   LOG(INFO) << "Shuffling data";
+  //   shuffle(lines.begin(), lines.end());
+  // }
   LOG(INFO) << "A total of " << lines.size() << " images.";
 
   if (encode_type.size() && !encoded)
@@ -197,13 +199,6 @@ int main(int argc, char** argv) {
       txn.reset(db->NewTransaction());
     }
 
-    // Datum _datum;
-    // _datum.set_channels(lines[line_id].second.size());
-    // _datum.set_height(1);
-    // _datum.set_width(1);
-    // _datum.set_label(0);
-    // _datum.set_encoded(false);
-
     int idx = 0;
     int label_count = 0;
     int max_size = labels[idx];
@@ -235,7 +230,6 @@ int main(int argc, char** argv) {
         _datum.add_float_data(val);
       }
     }
-
     _datum.SerializeToString(&out);
     labels_db[idx].second->Put(std::string(key_cstr, length), out);
     //out.clear();
@@ -263,5 +257,5 @@ int main(int argc, char** argv) {
   }
   LOG(INFO) << "Total images added: " << count;
   LOG(INFO) << "--Done--";
-  return 0; 
+  return 0;
 }
