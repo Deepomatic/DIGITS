@@ -164,7 +164,7 @@ def from_files(job, form):
     flask.request.files[form.input_labels.name].save(
         labels
         )
-    
+
     generic(job, form, files, labels)
 
 def from_path(job, form):
@@ -189,6 +189,7 @@ def image_regression_dataset_create():
     Returns JSON when requested: {job_id,name,status} or {errors:[]}
     """
     form = ImageRegressionDatasetForm()
+    print form.method.data
     if not form.validate_on_submit():
         if request_wants_json():
             return flask.jsonify({'errors': form.errors}), 400
@@ -210,6 +211,8 @@ def image_regression_dataset_create():
             from_files(job, form)
         elif form.method.data == 'upload':
             from_path(job, form)
+        elif form.method.data == 'advanced':
+            pass
 
         scheduler.add_job(job)
         if request_wants_json():
@@ -226,4 +229,3 @@ def show(job):
     Called from digits.dataset.views.datasets_show()
     """
     return flask.render_template('datasets/images/regression/show.html', job=job)
-

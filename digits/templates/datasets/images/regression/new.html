@@ -128,6 +128,7 @@
                 <ul class="nav nav-tabs" id="db-tabs" role="tablist">
                     <li><a href="#db-regression" role="tab" data-toggle="tab">Use Image Folder</a></li>
                     <li><a href="#db-upload" role="tab" data-toggle="tab">Use files path </a></li>
+                    <li><a href="#db-advanced" role="tab" data-toggle="tab">Use advanced options</a></li>
                 </ul>
 
                 <!-- Tab panes -->
@@ -168,7 +169,7 @@
                                     <td>Percent test
                                         <td class="form-group{{' has-error' if form.percent_val.errors}}">
                                             {{ form.percent_test(class='form-control') }}
-                                        </td>    
+                                        </td>
                                 </tr>
                             </table>
                         </div>
@@ -183,7 +184,35 @@
                                 ></span>
                             </div>
                         </div>
-                    </div> 
+                    </div>
+                    <div class="tab-pane" id="db-advanced">
+                      <div class="row">
+                        <table class="table">
+                          <tr>
+                              <td><b>Input path</b> <span name="text_file_explanation"
+                                  class="explanation-tooltip glyphicon glyphicon-question-sign"
+                                  data-container="body"
+                                  title="should contain a file named 'dataset.json'"></span>
+                              </td>
+                              <td class="form-group{{' has-error' if form.textfile_folderPath.errors}}">
+                                  {{ form.textfile_folderPath(class='form-control') }}
+                              </td>
+                          </tr>
+                          <tr>
+                              <td>Percent validation
+                                  <td class="form-group{{' has-error' if form.percent_val.errors}}">
+                                      {{ form.percent_val(class='form-control') }}
+                                  </td>
+                              </tr>
+                          <tr>
+                              <td>Percent test
+                                  <td class="form-group{{' has-error' if form.percent_val.errors}}">
+                                      {{ form.percent_test(class='form-control') }}
+                                  </td>
+                          </tr>
+                        </table>
+                      </div>
+                    </div>
                     <div class="tab-pane" id="db-upload">
                         <div class="row">
                             <table class="table">
@@ -219,7 +248,7 @@
                                     <td>Percent test
                                         <td class="form-group{{' has-error' if form.percent_val.errors}}">
                                             {{ form.percent_test(class='form-control') }}
-                                        </td>    
+                                        </td>
                                 </tr>
                             </table>
                         </div>
