@@ -212,7 +212,9 @@ def image_regression_dataset_create():
         elif form.method.data == 'upload':
             from_path(job, form)
         elif form.method.data == 'advanced':
-            pass
+            # A partir d'ici il faut coder, tu peux t'inspirer des fonctions au dessus
+            # pour generer les images temporaires (resize/crop...)
+            sys.exit(1)
 
         scheduler.add_job(job)
         if request_wants_json():
