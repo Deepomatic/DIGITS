@@ -44,7 +44,7 @@ def process_image(queue):
                 mean += img
                 mean_count += 1
                 if not os.path.exists(tmp):
-                    os.makedirs(tmp) 
+                    os.makedirs(tmp)
             finally:
                 lock.release()
             img = PIL.Image.fromarray(img)
@@ -63,7 +63,7 @@ def preprocess_files(output_file, input_file, resize_mode, mean_file, image_widt
 
     with open(output_file, "r") as fd:
         for line in fd:
-            output_list.append(line.split(" ")[0]) 
+            output_list.append(line.split(" ")[0])
 
     queue = Queue.Queue()
     for i in range(15): # "random" value
@@ -78,8 +78,8 @@ def preprocess_files(output_file, input_file, resize_mode, mean_file, image_widt
                 logger.error("Can't open file:{}".format(line))
                 print line
                 sys.exit(-1)
-            queue.put((line, output_list[i], image_height, image_width, resize_mode, encoding))
-    
+            queue.put((line, output_list[i - 1], image_height, image_width, resize_mode, encoding))
+
     flag = True
     logger.debug("Processing images")
     while not queue.empty():

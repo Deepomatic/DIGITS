@@ -87,6 +87,9 @@ def create_dummy_regression_dataset(data_path):
         fd.write("{}\n".format(len(labels)))
         fd.write("\n".join(output))
         fd.write("\n")
+    print "{}\n".format(len(labels))
+    print "\n".join(output)
+    print data_path
 
     with open(os.path.join(data_path, "labels.txt"), "w") as fd:
         fd.write(json.dumps([labels.keys()]))
