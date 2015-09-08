@@ -70,6 +70,8 @@ class TrainTask(Task):
         self.train_outputs = OrderedDict()
         self.val_outputs = OrderedDict()
 
+        self.max_accuracy = 0.0
+
     def __getstate__(self):
         state = super(TrainTask, self).__getstate__()
         if 'dataset' in state:
@@ -500,6 +502,11 @@ class TrainTask(Task):
                     if 'accuracy' in output.kind.lower():
                         data['columns'].append([col_id] + [100*x for x in output.data[::stride]])
                         data['axes'][col_id] = 'y2'
+
+                        if (not 'top-' in name) or ('top-1' in name):
+                            vals = [100*x for x in output.data[::stride]]
+                            vals.append(self.max_accuracy)
+                            self.max_accuracy = max(vals)
                     else:
                         data['columns'].append([col_id] + output.data[::stride])
                     added_val_data = True

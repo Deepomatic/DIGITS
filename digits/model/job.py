@@ -43,6 +43,9 @@ class ModelJob(Job):
             d.update({
                 'snapshots': [s[1] for s in self.train_task().snapshots],
                 })
+            d.update({
+                    'accuracy': self.train_task().max_accuracy
+                })
         return d
 
     def load_dataset(self):
