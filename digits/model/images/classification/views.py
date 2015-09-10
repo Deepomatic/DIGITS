@@ -60,9 +60,9 @@ def image_classification_model_create():
     form.standard_networks.choices = get_standard_networks()
     form.standard_networks.default = get_default_standard_network()
     form.previous_networks.choices = get_previous_networks()
-
+    
     prev_network_snapshots = get_previous_network_snapshots()
-
+    
     if not form.validate_on_submit():
         if request_wants_json():
             return flask.jsonify({'errors': form.errors}), 400

@@ -12,7 +12,7 @@ from digits.task import Task
 from digits.utils import override
 
 # NOTE: Increment this everytime the picked object changes
-PICKLE_VERSION = 2
+PICKLE_VERSION = 3
 
 # Used to store network outputs
 NetworkOutput = namedtuple('NetworkOutput', ['kind', 'data'])
@@ -85,6 +85,7 @@ class TrainTask(Task):
         return state
 
     def __setstate__(self, state):
+
         if state['pickver_task_train'] < 2:
             print 'Upgrading TrainTask to version 2'
             state['train_outputs'] = OrderedDict()
@@ -103,6 +104,19 @@ class TrainTask(Task):
                 if va:
                     state['val_outputs']['accuracy'] = NetworkOutput('Accuracy', [x[1]/100 for x in va])
                 state['val_outputs']['loss'] = NetworkOutput('SoftmaxWithLoss', [x[1] for x in vl])
+
+        if state['pickver_task_train'] < 3:
+            print 'Upgrading TrainTask to version 3'
+            ## Computing the current maximum val accuracy
+            state['max_accuracy'] = {} 
+            if state['train_outputs'] and 'epoch' in state['train_outputs']:
+                for name, output in state['val_outputs'].iteritems():
+                    if name not in ['epoch']: 
+                        if 'accuracy' in output.kind.lower(): 
+                            state['max_accuracy'][name] = 0.0
+                            vals = [100*x for x in output.data[::1]] 
+                            state['max_accuracy'][name] = max(vals) 
+
         state['pickver_task_train'] = PICKLE_VERSION
         super(TrainTask, self).__setstate__(state)
 
@@ -500,13 +514,11 @@ class TrainTask(Task):
                     data['xs'][col_id] = 'val_epochs'
                     data['names'][col_id] = '%s (val)' % name
                     if 'accuracy' in output.kind.lower():
-                        data['columns'].append([col_id] + [100*x for x in output.data[::stride]])
+                        vals = [100*x for x in output.data[::stride]]
+                        data['columns'].append([col_id] + vals)
                         data['axes'][col_id] = 'y2'
-
-                        if (not 'top-' in name) or ('top-1' in name):
-                            vals = [100*x for x in output.data[::stride]]
-                            vals.append(self.max_accuracy)
-                            self.max_accuracy = max(vals)
+                        self.max_accuracy[name] = max(vals) 
+                        
                     else:
                         data['columns'].append([col_id] + output.data[::stride])
                     added_val_data = True

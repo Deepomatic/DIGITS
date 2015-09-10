@@ -26,19 +26,22 @@ class ModelForm(Form):
             raise validators.ValidationError("Selected job doesn't exist. Maybe it was deleted by another user.")
 
     def validate_NetParameter(form, field):
+ 
         fw = frameworks.get_framework_by_id(form['framework'].data)
         try:
-            # below function raises a BadNetworkException in case of validation error
+            # below function raises a BadNetworkException in case of validation error 
             fw.validate_network(field.data)
         except frameworks.errors.BadNetworkError as e:
             raise validators.ValidationError('Bad network: %s' % e.message)
 
     ### Fields
+    print "BLA"
 
     # The options for this get set in the view (since they are dynamic)
     dataset = utils.forms.SelectField('Select Dataset', choices=[],
                 tooltip = "Choose the dataset to use for this model."
             )
+    print "BLA"
 
     train_epochs = utils.forms.IntegerField('Training epochs',
             validators = [
@@ -56,6 +59,7 @@ class ModelForm(Form):
             tooltip = "How many epochs of training between taking a snapshot?"
             )
 
+    print "BLA"
     val_interval = utils.forms.FloatField('Validation interval (in epochs)',
             default = 1,
             validators = [
@@ -91,6 +95,7 @@ class ModelForm(Form):
             default = 'SGD',
             tooltip = "What type of solver will be used??"
             )
+
 
     ### Learning rate
 
