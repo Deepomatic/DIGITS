@@ -70,7 +70,7 @@ class TrainTask(Task):
         self.train_outputs = OrderedDict()
         self.val_outputs = OrderedDict()
 
-        self.max_accuracy = 0.0
+        self.max_accuracy = {}
 
     def __getstate__(self):
         state = super(TrainTask, self).__getstate__()
