@@ -2,6 +2,6 @@
 
 from digits.webapp import app
 import classification.views
+import regression.views
 
 NAMESPACE = '/models/images'
-

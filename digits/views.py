@@ -64,7 +64,12 @@ def home():
                         'title': 'Classification',
                         'id': 'image-classification',
                         'url': flask.url_for('image_classification_model_new'),
-                        },
+                    },
+                    {
+                        'title': 'Regression',
+                        'id': 'image-classification',
+                        'url': flask.url_for('image_regression_model_new'),
+                    },
                     ])
                 ]
 
