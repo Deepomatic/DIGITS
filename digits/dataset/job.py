@@ -55,4 +55,3 @@ class DatasetJob(Job):
             if isinstance(t, tasks.CreateDbTask) and 'test' in t.name().lower():
                 return t
         return None
-

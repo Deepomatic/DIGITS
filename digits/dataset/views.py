@@ -29,6 +29,8 @@ def datasets_show(job_id):
     else:
         if isinstance(job, dataset_images.ImageClassificationDatasetJob):
             return dataset_images.classification.views.show(job)
+        elif isinstance(job, dataset_images.ImageRegressionDatasetJob):
+            return dataset_images.regression.views.show(job)
         else:
             raise werkzeug.exceptions.BadRequest('Invalid job type')
 
@@ -43,4 +45,3 @@ def dataset_summary():
         raise werkzeug.exceptions.NotFound('Job not found')
 
     return flask.render_template('datasets/summary.html', dataset=job)
-

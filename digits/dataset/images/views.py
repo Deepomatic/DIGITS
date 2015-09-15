@@ -10,6 +10,7 @@ import digits
 from digits import utils
 from digits.webapp import app, autodoc
 import classification.views
+import regression.views
 
 NAMESPACE = '/datasets/images'
 
@@ -57,4 +58,3 @@ def image_dataset_resize_example():
                 )
     except Exception as e:
         return '%s: %s' % (type(e).__name__, e)
-

@@ -51,7 +51,12 @@ def home():
                         'id': 'image-classification',
                         'url': flask.url_for('image_classification_dataset_new'),
                         },
-                    ])
+                    {
+                        'title': 'Regression',
+                        'id': 'image-regression',
+                        'url': flask.url_for('image_regression_dataset_new'),
+                        },
+                    ]),
                 ]
         new_model_options = [
                 ('Images', [
@@ -78,7 +83,6 @@ def get_job_list(cls, running):
             key=lambda j: j.status_history[0][1],
             reverse=True,
             )
-
 
 ### Jobs routes
 
@@ -290,4 +294,3 @@ def on_leave():
         del flask.session['room']
         #print '>>> Somebody left room %s' % room
         leave_room(room)
-
