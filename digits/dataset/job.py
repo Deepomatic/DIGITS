@@ -21,20 +21,20 @@ class DatasetJob(Job):
         """
         Return all ParseFolderTasks for this job
         """
-        return [t for t in self.tasks if isinstance(t, tasks.ParseFolderTask)]
+        return [t for t in self.tasks if (isinstance(t, tasks.ParseFolderTask) or isinstance(t, tasks.CreateDbTaskRegression))]
 
     def create_db_tasks(self):
         """
         Return all CreateDbTasks for this job
         """
-        return [t for t in self.tasks if isinstance(t, tasks.CreateDbTask)]
+        return [t for t in self.tasks if (isinstance(t, tasks.CreateDbTask) or isinstance(t, tasks.CreateDbTaskRegression))]
 
     def train_db_task(self):
         """
         Return the task that creates the training set
         """
         for t in self.tasks:
-            if isinstance(t, tasks.CreateDbTask) and 'train' in t.name().lower():
+            if (isinstance(t, tasks.CreateDbTask) or isinstance(t, tasks.CreateDbTaskRegression)) and 'train' in t.name().lower():
                 return t
         return None
 
@@ -43,7 +43,7 @@ class DatasetJob(Job):
         Return the task that creates the validation set
         """
         for t in self.tasks:
-            if isinstance(t, tasks.CreateDbTask) and 'val' in t.name().lower():
+            if (isinstance(t, tasks.CreateDbTask) or isinstance(t, tasks.CreateDbTaskRegression)) and 'val' in t.name().lower():
                 return t
         return None
 
@@ -52,6 +52,6 @@ class DatasetJob(Job):
         Return the task that creates the test set
         """
         for t in self.tasks:
-            if isinstance(t, tasks.CreateDbTask) and 'test' in t.name().lower():
+            if (isinstance(t, tasks.CreateDbTask) or isinstance(t, tasks.CreateDbTaskRegression)) and 'test' in t.name().lower():
                 return t
         return None

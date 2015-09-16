@@ -45,6 +45,8 @@ def models_show(job_id):
     else:
         if isinstance(job, model_images.ImageClassificationModelJob):
             return model_images.classification.views.show(job)
+        elif isinstance(job, model_images.ImageRegressionModelJob):
+            return model_images.regression.views.show(job)
         else:
             raise werkzeug.exceptions.BadRequest(
                     'Invalid job type')
@@ -59,7 +61,10 @@ def models_customize():
     if not network:
         raise werkzeug.exceptions.BadRequest('network not provided')
 
-    networks_dir = os.path.join(os.path.dirname(digits.__file__), 'standard-networks')
+    if flask.request.args['type'] == "regression":
+        networks_dir = os.path.join(os.path.dirname(digits.__file__), 'standard-networks/regression')
+    else:
+        networks_dir = os.path.join(os.path.dirname(digits.__file__), 'standard-networks')
     for filename in os.listdir(networks_dir):
         path = os.path.join(networks_dir, filename)
         if os.path.isfile(path):
@@ -208,5 +213,3 @@ def models_download(job_id, extension):
     response = flask.make_response(b.getvalue())
     response.headers['Content-Disposition'] = 'attachment; filename=%s_epoch_%s.%s' % (job.id(), epoch, extension)
     return response
-
-

@@ -20,7 +20,7 @@ from digits.config import config_value
 from digits.status import Status
 from digits import utils, dataset
 from digits.utils import subclass, override, constants
-from digits.dataset import ImageClassificationDatasetJob
+from digits.dataset import ImageClassificationDatasetJob, ImageRegressionDatasetJob
 
 # NOTE: Increment this everytime the pickled object changes
 PICKLE_VERSION = 2
@@ -102,6 +102,8 @@ class CaffeTrainTask(TrainTask):
 
         if isinstance(self.dataset, dataset.ImageClassificationDatasetJob):
             self.save_prototxt_files()
+        elif isinstance(self.dataset, dataset.ImageRegressionDatasetJob):
+            self.save_prototxt_regression_files()
         else:
             raise NotImplementedError
 
@@ -111,6 +113,314 @@ class CaffeTrainTask(TrainTask):
         self.receiving_val_output = False
         self.last_train_update = None
         return True
+
+
+
+    def save_prototxt_regression_files(self):
+        """
+        Save solver, train_val and deploy files to disk
+        """
+        has_val_set = self.dataset.val_db_task() is not None
+
+        ### Check what has been specified in self.network
+
+        tops = []
+        bottoms = {}
+        train_data_layer = None
+        val_data_layer = None
+        hidden_layers = caffe_pb2.NetParameter()
+        loss_layers = []
+        accuracy_layers = []
+        for layer in self.network.layer:
+            assert layer.type not in ['MemoryData', 'HDF5Data', 'ImageData'], 'unsupported data layer type'
+            if layer.type == 'Data':
+                for rule in layer.include:
+                    if rule.phase == caffe_pb2.TRAIN and layer.name.lower() == "data":
+                        assert train_data_layer is None, 'cannot specify two train data layers'
+                        train_data_layer = layer
+                    elif rule.phase == caffe_pb2.TEST and layer.name.lower() == "data":
+                        assert val_data_layer is None, 'cannot specify two test data layers'
+                        val_data_layer = layer
+            if layer.type == 'EuclideanLoss':
+                loss_layers.append(layer)
+            # elif layer.type == 'Accuracy':
+            #     addThis = True
+            #     if layer.accuracy_param.HasField('top_k'):
+            #         if layer.accuracy_param.top_k >= len(self.get_labels()):
+            #             self.logger.warning('Removing layer %s because top_k=%s while there are are only %s labels in this dataset' % (layer.name, layer.accuracy_param.top_k, len(self.get_labels())))
+            #             addThis = False
+            #     if addThis:
+            #         accuracy_layers.append(layer)
+            else:
+                if layer.type == 'InnerProduct' and not layer.inner_product_param.num_output and len(self.get_labels(True)) == 1:
+                    layer.inner_product_param.num_output = len(self.get_labels(True)[0])
+                hidden_layers.layer.add().CopyFrom(layer)
+                if len(layer.bottom) == 1 and len(layer.top) == 1 and layer.bottom[0] == layer.top[0]:
+                    pass
+                else:
+                    for top in layer.top:
+                        tops.append(top)
+                    for bottom in layer.bottom:
+                        bottoms[bottom] = True
+
+
+        if train_data_layer is None:
+            assert val_data_layer is None, 'cannot specify a test data layer without a train data layer'
+
+        assert len(loss_layers) > 0, 'must specify a loss layer'
+
+        network_outputs = []
+        for name in tops:
+            if name not in bottoms:
+                network_outputs.append(name)
+        assert len(network_outputs), 'network must have an output'
+
+        # Update num_output for any output InnerProduct layers automatically
+        # for layer in hidden_layers.layer:
+        #     if layer.type == 'InnerProduct':
+        #         for top in layer.top:
+        #             if top in network_outputs:
+        #                 layer.inner_product_param.num_output = 500#len(self.get_labels())
+        #                 break
+
+        ### Write train_val file
+
+        train_val_network = caffe_pb2.NetParameter()
+        label_layer = {"train": [], "val" : []}
+        # data layers
+
+        max_crop_size = min(self.dataset.image_dims[0], self.dataset.image_dims[1])
+        if train_data_layer is not None:
+            if train_data_layer.HasField('data_param'):
+                assert not train_data_layer.data_param.HasField('source'), "don't set the data_param.source"
+                assert not train_data_layer.data_param.HasField('backend'), "don't set the data_param.backend"
+            if self.crop_size:
+                assert self.crop_size <= max_crop_size, 'crop_size is larger than the image size'
+                train_data_layer.transform_param.crop_size = self.crop_size
+            elif train_data_layer.transform_param.HasField('crop_size'):
+                cs = train_data_layer.transform_param.crop_size
+                if cs > max_crop_size:
+                    # don't throw an error here
+                    cs = max_crop_size
+                train_data_layer.transform_param.crop_size = cs
+                self.crop_size = cs
+            train_val_network.layer.add().CopyFrom(train_data_layer)
+            train_data_layer = train_val_network.layer[-1]
+            if val_data_layer is not None and has_val_set:
+                if val_data_layer.HasField('data_param'):
+                    assert not val_data_layer.data_param.HasField('source'), "don't set the data_param.source"
+                    assert not val_data_layer.data_param.HasField('backend'), "don't set the data_param.backend"
+                if self.crop_size:
+                    # use our error checking from the train layer
+                    val_data_layer.transform_param.crop_size = self.crop_size
+                train_val_network.layer.add().CopyFrom(val_data_layer)
+                val_data_layer = train_val_network.layer[-1]
+        else:
+            train_data_layer = train_val_network.layer.add(type = 'Data', name = 'data')
+            train_data_layer.top.append('data')
+            train_data_layer.include.add(phase = caffe_pb2.TRAIN)
+            train_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+            if self.crop_size:
+                assert self.crop_size <= max_crop_size, 'crop_size is larger than the image size'
+                train_data_layer.transform_param.crop_size = self.crop_size
+
+            for i, lab in enumerate(self.get_labels(True)):
+                label_layer["train"].append(train_val_network.layer.add(type = 'Data', name = 'label' + str(i)))
+                label_layer["train"][i].top.append('label' + str(i))
+                label_layer["train"][i].include.add(phase = caffe_pb2.TRAIN)
+                label_layer["train"][i].data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+
+
+            # #HACK
+            # if self.crop_size:
+            #     label_train_data_layer.transform_param.crop_size = self.crop_size
+
+            if has_val_set:
+                val_data_layer = train_val_network.layer.add(type = 'Data', name = 'data')
+                val_data_layer.top.append('data')
+                val_data_layer.include.add(phase = caffe_pb2.TEST)
+                val_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+                if self.crop_size:
+                    assert self.crop_size <= max_crop_size, 'crop_size is larger than the image size'
+                    val_data_layer.transform_param.crop_size = self.crop_size
+
+                for i, lab in enumerate(self.get_labels(True)):
+                    label_layer["val"].append(train_val_network.layer.add(type = 'Data', name = 'label' + str(i)))
+                    label_layer["val"][i].top.append('label' + str(i))
+                    label_layer["val"][i].include.add(phase = caffe_pb2.TEST)
+                    label_layer["val"][i].data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+
+        train_data_layer.data_param.source = self.dataset.path(self.dataset.train_db_task().db_name + "/data_lmdb/")
+        train_data_layer.data_param.backend = caffe_pb2.DataParameter.LMDB
+        for i, lab in enumerate(self.get_labels(True)):
+            label_layer["train"][i].data_param.source = self.dataset.path(self.dataset.train_db_task().db_name + "/labels_{}_lmdb/".format(i))
+            label_layer["train"][i].data_param.backend = caffe_pb2.DataParameter.LMDB
+        if val_data_layer is not None and has_val_set:
+            val_data_layer.data_param.source = self.dataset.path(self.dataset.val_db_task().db_name + "/data_lmdb/")
+            val_data_layer.data_param.backend = caffe_pb2.DataParameter.LMDB
+
+            for i, lab in enumerate(self.get_labels(True)):
+                label_layer["val"][i].data_param.source = self.dataset.path(self.dataset.val_db_task().db_name + "/labels_{}_lmdb/".format(i))
+                label_layer["val"][i].data_param.backend = caffe_pb2.DataParameter.LMDB
+
+        if self.use_mean:
+            train_data_layer.transform_param.mean_file = self.dataset.path(".") + "/mean.binaryproto"
+            if val_data_layer is not None and has_val_set:
+                val_data_layer.transform_param.mean_file = self.dataset.path(".") + "/mean.binaryproto"
+        if self.batch_size:
+            train_data_layer.data_param.batch_size = self.batch_size
+            for i, lab in enumerate(self.get_labels(True)):
+                label_layer["train"][i].data_param.batch_size = self.batch_size
+
+            #label_train_data_layer.data_param.batch_size = self.batch_size
+            if val_data_layer is not None and has_val_set:
+                val_data_layer.data_param.batch_size = self.batch_size
+                for i, lab in enumerate(self.get_labels(True)):
+                    label_layer["val"][i].data_param.batch_size = self.batch_size
+                #label_val_data_layer.data_param.batch_size = self.batch_size
+        else:
+            if not train_data_layer.data_param.HasField('batch_size'):
+                train_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+                for i, lab in enumerate(self.get_labels(True)):
+                    label_layer["train"][i].data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+                #label_train_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+
+            if val_data_layer is not None and has_val_set and not val_data_layer.data_param.HasField('batch_size'):
+                val_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+                for i, lab in enumerate(self.get_labels(True)):
+                    label_layer["val"][i].data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+                #label_val_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+
+        # hidden layers
+        train_val_network.MergeFrom(hidden_layers)
+
+        # output layers
+        train_val_network.layer.extend(loss_layers)
+        train_val_network.layer.extend(accuracy_layers)
+
+        with open(self.path(self.train_val_file), 'w') as outfile:
+            text_format.PrintMessage(train_val_network, outfile)
+
+        ### Write deploy file
+
+        deploy_network = caffe_pb2.NetParameter()
+
+        # input
+        deploy_network.input.append('data')
+        deploy_network.input_dim.append(1)
+        deploy_network.input_dim.append(self.dataset.image_dims[2])
+        if self.crop_size:
+            deploy_network.input_dim.append(self.crop_size)
+            deploy_network.input_dim.append(self.crop_size)
+        else:
+            deploy_network.input_dim.append(self.dataset.image_dims[0])
+            deploy_network.input_dim.append(self.dataset.image_dims[1])
+
+        # hidden layers
+        for i, layer in enumerate(hidden_layers.layer):
+            if layer.type.lower() == 'label':
+                del hidden_layers.layer[i]
+        deploy_network.MergeFrom(hidden_layers)
+
+        # output layers
+        if loss_layers[-1].type == 'SoftmaxWithLoss':
+            prob_layer = deploy_network.layer.add(
+                    type = 'Softmax',
+                    name = 'prob')
+            prob_layer.bottom.append(network_outputs[-1])
+            prob_layer.top.append('prob')
+
+        with open(self.path(self.deploy_file), 'w') as outfile:
+            text_format.PrintMessage(deploy_network, outfile)
+
+        ### Write solver file
+
+        solver = caffe_pb2.SolverParameter()
+        # get enum value for solver type
+        solver.solver_type = getattr(solver, self.solver_type)
+        solver.net = self.train_val_file
+        # TODO: detect if caffe is built with CPU_ONLY
+        gpu_list = config_value('gpu_list')
+        if gpu_list and gpu_list != 'NONE':
+            solver.solver_mode = caffe_pb2.SolverParameter.GPU
+        else:
+            solver.solver_mode = caffe_pb2.SolverParameter.CPU
+        solver.snapshot_prefix = self.snapshot_prefix
+
+        # Epochs -> Iterations
+
+        train_iter = int(math.ceil(float(self.dataset.train_db_task().entries_count) / train_data_layer.data_param.batch_size))
+        solver.max_iter = train_iter * self.train_epochs
+        snapshot_interval = self.snapshot_interval * train_iter
+        if 0 < snapshot_interval <= 1:
+            solver.snapshot = 1 # don't round down
+        elif 1 < snapshot_interval < solver.max_iter:
+            solver.snapshot = int(snapshot_interval)
+        else:
+            solver.snapshot = 0 # only take one snapshot at the end
+
+        if has_val_set and self.val_interval:
+            solver.test_iter.append(int(math.ceil(float(self.dataset.val_db_task().entries_count) / val_data_layer.data_param.batch_size)))
+            val_interval = self.val_interval * train_iter
+            if 0 < val_interval <= 1:
+                solver.test_interval = 1 # don't round down
+            elif 1 < val_interval < solver.max_iter:
+                solver.test_interval = int(val_interval)
+            else:
+                solver.test_interval = solver.max_iter # only test once at the end
+
+        # Learning rate
+        solver.base_lr = self.learning_rate
+        solver.lr_policy = self.lr_policy['policy']
+        scale = float(solver.max_iter)/100.0
+        if solver.lr_policy == 'fixed':
+            pass
+        elif solver.lr_policy == 'step':
+            # stepsize = stepsize * scale
+            solver.stepsize = int(math.ceil(float(self.lr_policy['stepsize']) * scale))
+            solver.gamma = self.lr_policy['gamma']
+        elif solver.lr_policy == 'multistep':
+            for value in self.lr_policy['stepvalue']:
+                # stepvalue = stepvalue * scale
+                solver.stepvalue.append(int(math.ceil(float(value) * scale)))
+            solver.gamma = self.lr_policy['gamma']
+        elif solver.lr_policy == 'exp':
+            # gamma = gamma^(1/scale)
+            solver.gamma = math.pow(self.lr_policy['gamma'], 1.0/scale)
+        elif solver.lr_policy == 'inv':
+            # gamma = gamma / scale
+            solver.gamma = self.lr_policy['gamma'] / scale
+            solver.power = self.lr_policy['power']
+        elif solver.lr_policy == 'poly':
+            solver.power = self.lr_policy['power']
+        elif solver.lr_policy == 'sigmoid':
+            # gamma = -gamma / scale
+            solver.gamma = -1.0 * self.lr_policy['gamma'] / scale
+            # stepsize = stepsize * scale
+            solver.stepsize = int(math.ceil(float(self.lr_policy['stepsize']) * scale))
+        else:
+            raise Exception('Unknown lr_policy: "%s"' % solver.lr_policy)
+
+        # go with the suggested defaults
+        if solver.solver_type != solver.ADAGRAD:
+            solver.momentum = 0.9
+        solver.weight_decay = 0.0005
+
+        # Display 8x per epoch, or once per 5000 images, whichever is more frequent
+        solver.display = max(1, min(
+                int(math.floor(float(solver.max_iter) / (self.train_epochs * 8))),
+                int(math.ceil(5000.0 / train_data_layer.data_param.batch_size))
+                ))
+
+        if self.random_seed is not None:
+            solver.random_seed = self.random_seed
+
+        with open(self.path(self.solver_file), 'w') as outfile:
+            text_format.PrintMessage(solver, outfile)
+        self.solver = solver # save for later
+        return True
+
+############################################################################
 
     def save_prototxt_files(self):
         """
@@ -630,7 +940,119 @@ class CaffeTrainTask(TrainTask):
                     snapshot_epoch=snapshot_epoch,
                     layers=layers,
                     )
+        elif isinstance(self.dataset, ImageRegressionDatasetJob): #TODO own function
+            return self.regress_one(data,
+                    snapshot_epoch=snapshot_epoch,
+                    layers=layers,
+                    )
         raise NotImplementedError()
+
+    def regress_one(self, image, snapshot_epoch=None, layers=None):
+        """
+        Regress an image
+        Returns (predictions, visualizations)
+        predictions -- an array of [ (label, confidence), ...] for each label, sorted by confidence
+        visualizations -- a list of dicts for the specified layers
+        Returns (None, None) if something goes wrong
+        Arguments:
+        image -- a np.array
+        Keyword arguments:
+        snapshot_epoch -- which snapshot to use
+        layers -- which layer activation[s] and weight[s] to visualize
+        """
+        labels = self.get_labels()
+        net = self.get_net(snapshot_epoch)
+
+        # process image
+        if image.ndim == 2:
+            image = image[:,:,np.newaxis]
+        preprocessed = self.get_transformer().preprocess(
+                'data', image)
+
+        # reshape net input (if necessary)
+        test_shape = (1,) + preprocessed.shape
+        if net.blobs['data'].data.shape != test_shape:
+            net.blobs['data'].reshape(*test_shape)
+
+        # run inference
+        net.blobs['data'].data[...] = preprocessed
+        output = net.forward()
+        scores = output[net.outputs[-1]].flatten()
+        indices = (-scores).argsort()
+        predictions = {}
+        for idx, line in enumerate(net.outputs):
+            labels = self.get_labels(True)[idx]
+            predictions[line] = []
+            scores = output[line].flatten()
+            indices = (-scores).argsort()
+            for i in indices:
+                predictions[line].append([labels[i], np.float64(scores[i])])
+
+        # add visualizations
+        visualizations = []
+        if layers and layers != 'none':
+            if layers == 'all':
+                added_activations = []
+                for layer in self.network.layer:
+                    print 'Computing visualizations for "%s"...' % layer.name
+                    if not layer.type.endswith(('Data', 'Loss', 'Accuracy')):
+                        for bottom in layer.bottom:
+                            if bottom in net.blobs and bottom not in added_activations:
+                                data = net.blobs[bottom].data[0]
+                                vis = self.get_layer_visualization(data)
+                                mean, std, hist = self.get_layer_statistics(data)
+                                visualizations.append(
+                                        {
+                                            'name': str(bottom),
+                                            'type': 'Activations',
+                                            'mean': mean,
+                                            'stddev': std,
+                                            'histogram': hist,
+                                            'image_html': utils.image.embed_image_html(vis),
+                                            }
+                                        )
+                                added_activations.append(bottom)
+                        if layer.name in net.params:
+                            data = net.params[layer.name][0].data
+                            if layer.type not in ['InnerProduct']:
+                                vis = self.get_layer_visualization(data)
+                            else:
+                                vis = None
+                            mean, std, hist = self.get_layer_statistics(data)
+                            visualizations.append(
+                                    {
+                                        'name': str(layer.name),
+                                        'type': 'Weights (%s layer)' % layer.type,
+                                        'mean': mean,
+                                        'stddev': std,
+                                        'histogram': hist,
+                                        'image_html': utils.image.embed_image_html(vis),
+                                        }
+                                    )
+                        for top in layer.top:
+                            if top in net.blobs and top not in added_activations:
+                                data = net.blobs[top].data[0]
+                                normalize = True
+                                # don't normalize softmax layers
+                                if layer.type == 'Softmax':
+                                    normalize = False
+                                vis = self.get_layer_visualization(data, normalize=normalize)
+                                mean, std, hist = self.get_layer_statistics(data)
+                                visualizations.append(
+                                        {
+                                            'name': str(top),
+                                            'type': 'Activation',
+                                            'mean': mean,
+                                            'stddev': std,
+                                            'histogram': hist,
+                                            'image_html': utils.image.embed_image_html(vis),
+                                            }
+                                        )
+                                added_activations.append(top)
+            else:
+                raise NotImplementedError
+
+        return (predictions, visualizations)
 
     def classify_one(self, image, snapshot_epoch=None, layers=None):
         """
@@ -639,10 +1061,8 @@ class CaffeTrainTask(TrainTask):
             predictions -- an array of [ (label, confidence), ...] for each label, sorted by confidence
             visualizations -- a list of dicts for the specified layers
         Returns (None, None) if something goes wrong
-
         Arguments:
         image -- a np.array
-
         Keyword arguments:
         snapshot_epoch -- which snapshot to use
         layers -- which layer activation[s] and weight[s] to visualize
@@ -667,9 +1087,10 @@ class CaffeTrainTask(TrainTask):
         scores = output[net.outputs[-1]].flatten()
         indices = (-scores).argsort()
         predictions = []
+        scores = output[net.outputs[-1]].flatten()
+        indices = (-scores).argsort()
         for i in indices:
-            predictions.append( (labels[i], scores[i]) )
-
+                predictions.append( (self.get_labels()[i], scores[i]) )
 
         # add visualizations
         visualizations = []
@@ -989,4 +1410,3 @@ class CaffeTrainTask(TrainTask):
 
         self._transformer = t
         return self._transformer
-

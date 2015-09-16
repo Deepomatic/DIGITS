@@ -2,6 +2,7 @@
 
 import time
 import os.path
+import json
 from collections import OrderedDict, namedtuple
 
 import gevent
@@ -393,24 +394,29 @@ class TrainTask(Task):
         """
         return None
 
-    def get_labels(self):
+    def get_labels(self, isRegression = False):
         """
         Read labels from labels_file and return them in a list
         """
         # The labels might be set already
-        if hasattr(self, '_labels') and self._labels and len(self._labels) > 0:
-            return self._labels
+        # if hasattr(self, '_labels') and self._labels and len(self._labels) > 0:
+        #     return self._labels
 
         assert hasattr(self.dataset, 'labels_file'), 'labels_file not set'
         assert self.dataset.labels_file, 'labels_file not set'
         assert os.path.exists(self.dataset.path(self.dataset.labels_file)), 'labels_file does not exist'
 
         labels = []
-        with open(self.dataset.path(self.dataset.labels_file)) as infile:
-            for line in infile:
-                label = line.strip()
-                if label:
-                    labels.append(label)
+        if isRegression:
+            with open(self.dataset.path(self.dataset.labels_file)) as infile:
+                content = json.loads(infile.read())
+                labels = content
+        else:
+            with open(self.dataset.path(self.dataset.labels_file)) as infile:
+                for line in infile:
+                    label = line.strip()
+                    if label:
+                        labels.append(label)
 
         assert len(labels) > 0, 'no labels in labels_file'
 
@@ -587,4 +593,3 @@ class TrainTask(Task):
             return None
         else:
             return data
-

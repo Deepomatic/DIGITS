@@ -53,7 +53,7 @@ def image_regression_model_new():
 @autodoc(['models', 'api'])
 def image_regression_model_create():
     """
-    Create a new ImageClassificationModelJob
+    Create a new ImageRegressionModelJob
     """
     form = ImageRegressionModelForm()
     form.dataset.choices = get_datasets()
@@ -128,8 +128,8 @@ def image_regression_model_create():
                                     % (form.previous_networks.data, epoch))
                         if not (os.path.exists(pretrained_model)):
                             raise werkzeug.exceptions.BadRequest(
-                                    """Pretrained_model for the selected epoch doesn't exist. May be deleted 
-                                    by another user/process. Please restart the server to load the correct 
+                                    """Pretrained_model for the selected epoch doesn't exist. May be deleted
+                                    by another user/process. Please restart the server to load the correct
                                     pretrained_model details""")
                     break
 
@@ -440,7 +440,6 @@ def get_standard_networks():
     return [
             ('lenet', 'LeNet'),
             ('alexnet', 'AlexNet'),
-            #('vgg-16', 'VGG (16-layer)'), #XXX model won't learn
             ('googlenet', 'GoogLeNet'),
             ]
 

@@ -2,7 +2,7 @@
 
 import os
 import random
-
+import shutil
 import flask
 
 from digits import utils
@@ -21,9 +21,7 @@ def generic(job, form, files, labels):
     """
     ### labels
 
-
     job.labels_file = labels
-
     shuffle = bool(form.textfile_shuffle.data)
     fd = open(files, "r")
     content = fd.read().split('\n')
@@ -168,7 +166,8 @@ def from_files(job, form):
     generic(job, form, files, labels)
 
 def from_path(job, form):
-    generic(job, form, form.textfile_filesPath.data, form.textfile_labelsPath.data)
+    shutil.copyfile(form.textfile_labelsPath.data, os.path.join(job.dir(), utils.constants.LABELS_FILE))
+    generic(job, form, form.textfile_filesPath.data, os.path.join(job.dir(), utils.constants.LABELS_FILE))
 
 @app.route(NAMESPACE + '/new', methods=['GET'])
 @autodoc('datasets')
