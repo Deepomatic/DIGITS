@@ -137,7 +137,7 @@ class CaffeTrainTask(TrainTask):
                     elif rule.phase == caffe_pb2.TEST and layer.name.lower() == "data":
                         assert val_data_layer is None, 'cannot specify two test data layers'
                         val_data_layer = layer
-            if layer.type == 'EuclideanLoss' or layer.type.lower() == 'jaccardloss':
+            if layer.type == 'EuclideanLoss' or layer.type == 'JaccardLoss':
                 loss_layers.append(layer)
             elif layer.type == 'Accuracy':
                  addThis = True
@@ -446,7 +446,7 @@ class CaffeTrainTask(TrainTask):
                     elif rule.phase == caffe_pb2.TEST:
                         assert val_data_layer is None, 'cannot specify two test data layers'
                         val_data_layer = layer
-            elif layer.type == 'SoftmaxWithLoss':
+            elif layer.type == 'SoftmaxWithLoss' or layer.type == 'FeaturesLoss':
                 loss_layers.append(layer)
             elif layer.type == 'Accuracy':
                 addThis = True

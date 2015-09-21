@@ -126,6 +126,7 @@ def from_files(job, form):
 
     encoding = form.encoding.data
     shuffle = bool(form.textfile_shuffle.data)
+    shuffle = False
 
     ### train
 

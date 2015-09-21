@@ -74,7 +74,7 @@ class DbCreator:
             channels    = 3,
             resize_mode = None,
             image_folder= None,
-            shuffle     = True,
+            shuffle     = False,
             mean_files  = None,
             encoding    = 'none',
             ):
