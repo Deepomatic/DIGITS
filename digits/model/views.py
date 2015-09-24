@@ -61,7 +61,7 @@ def models_customize():
     if not network:
         raise werkzeug.exceptions.BadRequest('network not provided')
 
-    if flask.request.args['type'] == "regression":
+    if flask.request.args.get('type') == "regression":
         networks_dir = os.path.join(os.path.dirname(digits.__file__), 'standard-networks/regression')
     else:
         networks_dir = os.path.join(os.path.dirname(digits.__file__), 'standard-networks')

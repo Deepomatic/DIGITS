@@ -7,20 +7,22 @@ from wtforms import validators
 from ..forms import ImageDatasetForm
 from digits.utils.forms import validate_required_iff
 import os
+import json
 
 class ImageRegressionDatasetForm(ImageDatasetForm):
     """
-    Defines the form used to create a new ImageClassificationDatasetJob
+    Defines the form used to create a new ImageRegressionDatasetJob
     """
 
-    method = wtforms.SelectField(u'Dataset type',
-        choices = [
-            ('folder', 'Folder'),
-            ('textfile', 'Textfiles'),
-            ('upload', 'upload')
-            ],
-        default='folder',
-        )
+    # method = wtforms.SelectField(u'Dataset type',
+    #     choices = [
+    #         ('folder', 'Folder'),
+    #         ('textfile', 'Textfiles'),
+    #         ('upload', 'upload'),
+    #         ('advanced', 'advanced')
+    #         ],
+    #     default='folder',
+    #     )
 
     def required_if_method(value):
 
@@ -48,7 +50,7 @@ class ImageRegressionDatasetForm(ImageDatasetForm):
     method = wtforms.HiddenField(u'Dataset type',
             default='regression',
             validators=[
-                validators.AnyOf(['regression', 'upload'], message='The method you chose is not currently supported.')
+                validators.AnyOf(['regression', 'upload', 'advanced'], message='The method you chose is not currently supported.')
                 ]
             )
     input_files = wtforms.FileField(u'Input file',
@@ -58,7 +60,7 @@ class ImageRegressionDatasetForm(ImageDatasetForm):
                 ]
             )
 
-    input_labels = wtforms.FileField(u'Input labels', 
+    input_labels = wtforms.FileField(u'Input labels',
             validators=[
                 required_if_method('textfile'),
 
@@ -84,8 +86,6 @@ class ImageRegressionDatasetForm(ImageDatasetForm):
     textfile_shuffle = wtforms.BooleanField('Shuffle lines',
             default = True)
 
-
-
     def validate_file_path(form, field):
         if not field.data:
             raise Validators.ValidationError('Please fill all the fields')
@@ -94,6 +94,39 @@ class ImageRegressionDatasetForm(ImageDatasetForm):
         else:
             return True
 
+    def validate_folder_path(form, field):
+        if not field.data:
+            raise Validators.ValidationError('Please fill all the fields')
+        elif not os.path.exists(field.data) or not os.path.isdir(field.data):
+            raise validators.ValidationError(message='Folder does not exist')
+        elif not os.path.exists(field.data + "/dataset.json") or not os.path.isfile(field.data + "/dataset.json"):
+            raise validators.ValidationError(message='The path {} should contain a file named dataset.json'.format(field.data))
+        else:
+            #TODO maybe move this code in another validator
+            with open(field.data + "/dataset.json") as fd:
+                content = json.loads(fd.read())
+                if content.has_key('data') and content.has_key('labels'):
+                    for key in content["data"]:
+                        if not content["data"][key].has_key('type'):
+                            raise validators.ValidationError(message="missing field type")
+                        if not content["data"][key]["type"] in ("img", "vector", "box", "class"):
+                            raise validators.ValidationError(message="type must be of type (img,vector,box,class)")
+                    for key in content["labels"]:
+                        if not content["labels"][key].has_key('type'):
+                            raise validators.ValidationError(message="missing field type")
+                        if not content["labels"][key]["type"] in ("img", "vector", "box", "class"):
+                            raise validators.ValidationError(message="type must be of type (img,vector,box,class)")
+                else:
+                    raise validators.ValidationError(message="missing field path, data or labels")
+            return True
+
+    textfile_folderPath = wtforms.StringField(u'Folder path',
+    validators = [
+        validate_required_iff(
+            method='advanced'),
+            validate_folder_path
+        ]
+    )
 
     ## file path
     textfile_filesPath = wtforms.StringField(u'Files file path',

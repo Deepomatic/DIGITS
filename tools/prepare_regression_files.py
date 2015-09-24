@@ -74,10 +74,9 @@ def preprocess_files(output_file, input_file, resize_mode, mean_file, image_widt
             if i == 0:
                 continue
             line = line.split(" ")[0]
-            if not os.access(line, os.W_OK):
-                logger.error("Can't open file:{}".format(line))
-                print line
-                sys.exit(-1)
+            if not os.access(line.replace('\n', ''), os.R_OK):
+               logger.error("Can't open file:{}".format(line))
+               sys.exit(-1)
             queue.put((line, output_list[i - 1], image_height, image_width, resize_mode, encoding))
 
     flag = True
@@ -119,5 +118,4 @@ if __name__ == "__main__":
     image_width = sys.argv[5]
     image_height = sys.argv[6]
     encoding = sys.argv[7]
-
     preprocess_files(output_file, input_file, resize_mode, mean_file, image_width, image_height, encoding)

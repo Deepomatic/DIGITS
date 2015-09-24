@@ -980,8 +980,9 @@ class CaffeTrainTask(TrainTask):
         scores = output[net.outputs[-1]].flatten()
         indices = (-scores).argsort()
         predictions = {}
-        for idx, line in enumerate(net.outputs):
-            labels = self.get_labels(True)[idx]
+
+        for line in net.outputs:
+            labels = self.get_labels(True)[0]#[idx]
             predictions[line] = []
             scores = output[line].flatten()
             indices = (-scores).argsort()
