@@ -1,10 +1,12 @@
-import image
 import numpy as np
 import os
 import sys
 import logging
 import PIL.Image
 # 82.Image as PIL
+import multiprocessing
+from multiprocessing.pool import ThreadPool, Pool
+import traceback
 
 try:
     import digits
@@ -22,53 +24,39 @@ from threading import Lock
 import Queue
 import time
 
-
 flag = False
 mean = None
 mean_count = 0
 lock = Lock()
 logger = logging.getLogger('digits.tools.prepare_regression_files')
 
-def process_image(queue):
+def process_image(input, output, image_height, image_width, resize_mode, encoding):
     global mean, mean_count, flag, lock
-    while True:
-        if flag and queue.empty():
-            break;
-        try:
-            input, output, image_height, image_width, resize_mode, encoding = queue.get(1)
-            img = image.load_image(input)
-            img = image.resize_image(image = img, height = int(image_height), width = int(image_width), resize_mode = resize_mode)
-            tmp = "/".join(output.split('/')[:-1])
-            try:
-                lock.acquire()
-                mean += img
-                mean_count += 1
-                if not os.path.exists(tmp):
-                    os.makedirs(tmp)
-            finally:
-                lock.release()
-            img = PIL.Image.fromarray(img)
-            img.save(output, encoding)
-        except Queue.Empty:
-            time.sleep(1)
-        except:
-            pass
+    img = PIL.Image.open(input)
+    img.resize((int(image_height), int(image_width)))
+    tmp = "/".join(output.split('/')[:-1])
+    try:
+        lock.acquire()
+        mean += img
+        mean_count += 1
+        if not os.path.exists(tmp):
+            os.makedirs(tmp)
+    finally:
+        lock.release()
+    img.save(output, encoding)
 
 def preprocess_files(output_file, input_file, resize_mode, mean_file, image_width, image_height, encoding = "jpeg"):
     global mean, mean_count, flag
     mean = np.zeros((int(image_height), int(image_width), 3), np.float64)
     output_list = []
 
-    print input_file, output_file
-
     with open(output_file, "r") as fd:
-        for line in fd:
-            output_list.append(line.split(" ")[0])
+        for i, line in enumerate(fd):
+            output_list.append(line.split(" ")[0].replace('\n', ''))
+    #queue = Queue.Queue()
 
-    queue = Queue.Queue()
-    for i in range(15): # "random" value
-        thread.start_new_thread(process_image, (queue,))
-
+    pool = ThreadPool(1)
+    rq = []
     with open(input_file, "r") as fd:
         for i, line in enumerate(fd):
             if i == 0:
@@ -77,12 +65,13 @@ def preprocess_files(output_file, input_file, resize_mode, mean_file, image_widt
             if not os.access(line.replace('\n', ''), os.R_OK):
                logger.error("Can't open file:{}".format(line))
                sys.exit(-1)
-            queue.put((line, output_list[i - 1], image_height, image_width, resize_mode, encoding))
+            params = [line.replace('\n', ''), output_list[i - 1], image_height, image_width, resize_mode, encoding]
+            rq.append(pool.apply_async(process_image, params))
 
-    flag = True
+    pool.close()
+    pool.join()
+
     logger.debug("Processing images")
-    while not queue.empty():
-        logger.info("Process {}/{}".format(mean_count, len(output_list)))
 
     if mean is not None:
         mean = np.around(mean / mean_count).astype(np.uint8)

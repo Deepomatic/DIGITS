@@ -99,6 +99,7 @@ def generate_advanced_lmdb_data(job, form, elements):
         content = elements["data"][key]
         old_content = content
         if content[0][0] == "data": #do it also for labels?
+
             with open(os.path.join(tmp_path, "files_{}.txt".format(i)), "w") as fd: #base input
                 fd.write(generate_file_output(content, True)) #LIST OF TMP FILE
                 generated_files["prepare"].append(os.path.join(tmp_path, "files_{}.txt".format(i)))
@@ -109,6 +110,9 @@ def generate_advanced_lmdb_data(job, form, elements):
                 tmp[0] = tmp_path + "/" + tmp[0]
                 new_content.append((line[0], line[1], " ".join(tmp)))
             content = new_content
+
+            with open(os.path.join(tmp_path, "files_{}.txt.tmp".format(i)), "w") as fd: #base input
+                fd.write(generate_file_output(content, True)) #LIST OF TMP FILE
 
         val = old_content[:int(number_images * percent_val * 0.01)]
         test = old_content[len(val):len(val) + int(number_images * percent_test * 0.01)]
@@ -158,7 +162,7 @@ def generate_advanced_lmdb_data(job, form, elements):
             prepare_task = tasks.PrepareFiles(
                     job_dir     = job.dir(),
                     input_file  = files,
-                    output_file = os.path.join(files),
+                    output_file = files + ".tmp",
                     resize_mode = job.resize_mode,
                     mean_file   = os.path.join(job.dir(), utils.constants.MEAN_FILE_CAFFE),
                     image_dims  = job.image_dims,
