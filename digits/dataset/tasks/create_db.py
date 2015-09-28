@@ -360,13 +360,22 @@ class CreateDbTaskRegression(Task):
 
     @override
     def task_arguments(self, resources):
-        args = ["/".join([os.path.join(os.path.dirname(os.path.dirname(digits.__file__))), "tools", "regression_db.bin"]),
+        # args = ["/".join([os.path.join(os.path.dirname(os.path.dirname(digits.__file__))), "tools", "regression_db.bin"]),
+        #     "-resize_height={}".format(self.image_dims[1]),
+        #     "-resize_width={}".format(self.image_dims[0]),
+        #     "-gray=False",
+        #     "-shuffle=True",
+        #     "-encode_type=jpg",
+        #     self.path("."),
+        #     self.path(self.input_file),
+        #     self.db_name]
+        args = ["/".join([os.path.join(os.path.dirname(os.path.dirname(digits.__file__))), "tools", "regression_db2.bin"]),
             "-resize_height={}".format(self.image_dims[1]),
             "-resize_width={}".format(self.image_dims[0]),
             "-gray=False",
             "-shuffle=True",
             "-encode_type=jpg",
-            self.path("."),
+            ".",
             self.path(self.input_file),
             self.db_name]
         print " ".join(args)

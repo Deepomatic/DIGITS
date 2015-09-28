@@ -69,8 +69,11 @@ int main(int argc, char** argv) {
         "    http://www.image-net.org/download-images\n");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-  LOG(INFO) << argc;
-  if (argc < 4) {
+  for (int i = 0; i < argc; ++i) {
+    LOG(INFO) << i << ": " << argv[i];
+  }
+
+  if (argc < 3) {
     gflags::ShowUsageWithFlagsRestrict(argv[0], "tools/regression_db");
     return 1;
   }
@@ -106,47 +109,7 @@ int main(int argc, char** argv) {
       }
       lines.emplace_back(std::pair<int, std::vector<std::string>>(idx, tokens));
     }
- //    std::string tmp;
- //    std::vector<float> line = {};
- //    if (flag) {
- //      LOG(INFO) << buffer;
- //      while (getline(iss, tmp, ' ' )) {
- //        int val = std::atoi(tmp.c_str());
- //        if (val > 0) {
- //          labels.push_back(val);
- //        }
- //      }
- //      flag = false;
- //    }
- //    else {
- //      getline(iss, tmp, ' ');
- //      std::pair<std::string, std::vector<float>> new_input = std::make_pair(tmp, line);
- //      while (getline(iss, tmp, ' ' )) {
- //        try {
- //          new_input.second.emplace_back(std::stold(tmp));
- //        }
- //        catch (const std::invalid_argument &e) {
- //           LOG(WARNING) << "error on line[" << buffer << "]-->" <<  tmp << "<--";
- //        }
- //      }
- //      lines.emplace_back(new_input);
- //    }
- //  }
- // //  [0.3948019742965698, 0.3316831588745117, 0.7660890817642212, 0.5581682920455933]
- // //[0.3308550185873606 0.33663366336633666 0.701363073110285 0.5631188118811881]
- //
- //  // if (FLAGS_shuffle) {
- //  //   // randomly shuffle data
- //  //   LOG(INFO) << "Shuffling data";
- //  //   shuffle(lines.begin(), lines.end());
- //  // }
- //  LOG(INFO) << "A total of " << lines.size() << " images.";
- //
- //  if (encode_type.size() && !encoded)
- //    LOG(INFO) << "encode_type specified, assuming encoded=true.";
- //
- //
-  //Create new DB
+
   std::string root_output = argv[1] + std::string("/") + std::string(db_name);
   if(mkdir(root_output.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1) {
     LOG(WARNING) << "can't create:" << root_output;
@@ -179,10 +142,10 @@ int main(int argc, char** argv) {
         std::transform(enc.begin(), enc.end(), enc.begin(), ::tolower);
       }
       status = ReadImageToDatum(line.second[0], 0, resize_height, resize_width, is_color, enc, &datum);
-      // datum.set_channels(3);
-      // datum.set_width(resize_width);
-      // datum.set_height(resize_height);
-      // datum.set_label(0);
+      datum.set_channels(3);
+      datum.set_width(resize_width);
+      datum.set_height(resize_height);
+      datum.set_label(0);
       if (status == false) continue;
       if (check_size) {
         if (!data_size_initialized) {

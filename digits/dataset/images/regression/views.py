@@ -134,9 +134,10 @@ def generate_advanced_lmdb_data(job, form, elements):
         with open(os.path.join(job.dir(), utils.constants.VAL_FILE + str(i) + ".tmp"), "w") as fd:
             fd.write(generate_file_output(val))
             generated_files["data"]["val"].append(os.path.join(job.dir(), utils.constants.VAL_FILE + str(i) + ".tmp"))
-        with open(os.path.join(job.dir(), utils.constants.TEST_FILE + str(i) + ".tmp"), "w") as fd:
-            fd.write(generate_file_output(test))
-            generated_files["data"]["test"].append(os.path.join(job.dir(), utils.constants.TEST_FILE + str(i) + ".tmp"))
+        if len(test):
+            with open(os.path.join(job.dir(), utils.constants.TEST_FILE + str(i) + ".tmp"), "w") as fd:
+                fd.write(generate_file_output(test))
+                generated_files["data"]["test"].append(os.path.join(job.dir(), utils.constants.TEST_FILE + str(i) + ".tmp"))
 
         with open(os.path.join(tmp_path, "files_tmp_{}.txt".format(i)), "w") as fd:
             fd.write(generate_file_output(content, True)) #LIST OF TMP FILE
@@ -153,24 +154,58 @@ def generate_advanced_lmdb_data(job, form, elements):
         with open(os.path.join(job.dir(), utils.constants.VAL_FILE + str(i) + "_label"), "w") as fd:
             fd.write(generate_file_output(val))
             generated_files["labels"]["val"].append(os.path.join(job.dir(), utils.constants.VAL_FILE + str(i) + "_label"))
-        with open(os.path.join(job.dir(), utils.constants.TEST_FILE + str(i) + "_label"), "w") as fd:
-            fd.write(generate_file_output(test))
-            generated_files["labels"]["test"].append(os.path.join(job.dir(), utils.constants.TEST_FILE + str(i) + "_label"))
 
-        image_folder = None
-        for files in generated_files["prepare"]:
-            prepare_task = tasks.PrepareFiles(
-                    job_dir     = job.dir(),
-                    input_file  = files,
-                    output_file = files + ".tmp",
-                    resize_mode = job.resize_mode,
-                    mean_file   = os.path.join(job.dir(), utils.constants.MEAN_FILE_CAFFE),
-                    image_dims  = job.image_dims,
-                    encoding    = form.encoding.data
-                    )
-            job.tasks.append(
-                    prepare_task
+        if len(test):
+            with open(os.path.join(job.dir(), utils.constants.TEST_FILE + str(i) + "_label"), "w") as fd:
+                fd.write(generate_file_output(test))
+                generated_files["labels"]["test"].append(os.path.join(job.dir(), utils.constants.TEST_FILE + str(i) + "_label"))
+
+    image_folder = None
+    for files in generated_files["prepare"]:
+        prepare_task = tasks.PrepareFiles(
+                job_dir     = job.dir(),
+                input_file  = files,
+                output_file = files + ".tmp",
+                resize_mode = job.resize_mode,
+                mean_file   = os.path.join(job.dir(), utils.constants.MEAN_FILE_CAFFE),
+                image_dims  = job.image_dims,
+                encoding    = form.encoding.data
                 )
+        job.tasks.append(
+                prepare_task
+            )
+
+
+    create_db_task = []
+    for type in ("data", "labels"):
+        for task_type in ("train", "val", "test"):
+            if len(generated_files[type][task_type]):
+                for i, file in enumerate(generated_files[type][task_type]):
+                    create_db_task.append(
+                    tasks.CreateDbTaskRegression(
+                        job_dir     = job.dir(),
+                        input_file  = file,
+                        db_name     = "{}_{}_{}".format(type, task_type, i),
+                        image_dims  = job.image_dims,
+                        image_folder= image_folder,
+                        resize_mode = job.resize_mode,
+                        encoding    = form.encoding.data,
+                        mean_file   = os.path.join(job.dir(), utils.constants.MEAN_FILE_CAFFE),
+                        labels_file = os.path.join(job.dir(), utils.constants.LABELS_FILE),
+                        shuffle     = False, #HACK shuffle,
+                        parents      = prepare_task
+                        )
+                    )
+                    job.tasks.append(create_db_task[-1])
+
+    job.tasks.append(
+        tasks.ClearFiles(
+            job_dir = job.dir(),
+            tmp_folder = tmp_path,
+            parents = create_db_task
+            )
+        )
+
 
 def generic(job, form, files, labels):
     """
