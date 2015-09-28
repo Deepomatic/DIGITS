@@ -211,6 +211,17 @@ New Image Regression Dataset
                               </td>
                       </tr>
                     </table>
+                    <div class="row">
+                        <div class="col-sm-12 form-group{{ ' has-error' if form.textfile_shuffle.errors else '' }}">
+                            {{ form.textfile_shuffle }}
+                            {{ form.textfile_shuffle.label }}
+                            <span name="textfile_shuffle_explanation"
+                            class="explanation-tooltip glyphicon glyphicon-question-sign"
+                            data-container="body"
+                            title="Shuffle the list of images before creating the database."
+                            ></span>
+                        </div>
+                    </div>
                   </div>
                 </div>
                 <div class="tab-pane" id="db-upload">

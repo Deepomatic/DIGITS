@@ -43,7 +43,6 @@ def process_image(input, output, image_height, image_width, resize_mode, encodin
             os.makedirs(tmp)
     finally:
         lock.release()
-    print input, output
     img.save(output, encoding)
 
 def preprocess_files(output_file, input_file, resize_mode, mean_file, image_width, image_height, encoding = "jpeg"):
@@ -54,9 +53,8 @@ def preprocess_files(output_file, input_file, resize_mode, mean_file, image_widt
     with open(output_file, "r") as fd:
         for i, line in enumerate(fd):
             output_list.append(line.split(" ")[0].replace('\n', ''))
-    #queue = Queue.Queue()
 
-    pool = ThreadPool(1)
+    pool = ThreadPool(15)
     rq = []
     with open(input_file, "r") as fd:
         for i, line in enumerate(fd):

@@ -15,7 +15,7 @@ from job import ImageRegressionDatasetJob
 
 NAMESPACE = '/datasets/images/regression'
 
-def find_elements(describ_path):
+def find_elements(describ_path, shuffle = False):
     """
     Take in a param the file that describ the dataset
     return a dictionnary such as
@@ -41,7 +41,10 @@ def find_elements(describ_path):
 
     ret = {"labels" : {}, "data" : {}}
     i = 0
+
     for dirname, dirnames, filenames in os.walk(path):
+        if shuffle:
+            random.shuffle(filenames)
         for filename in filenames:
             path = os.path.join(dirname, filename)
             if path.endswith(".json"):
@@ -363,7 +366,7 @@ def from_path(job, form):
 
 def advanced_format(job, form):
     datasetPath = form.textfile_folderPath.data + "/dataset.json"
-    elements = find_elements(datasetPath)
+    elements = find_elements(datasetPath, shuffle = bool(form.textfile_shuffle.data))
     generate_advanced_lmdb_data(job, form, elements)
 
 @app.route(NAMESPACE + '/new', methods=['GET'])
