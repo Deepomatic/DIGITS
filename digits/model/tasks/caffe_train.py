@@ -153,7 +153,9 @@ class CaffeTrainTask(TrainTask):
             #         accuracy_layers.append(layer)
             else:
                 if layer.type == 'InnerProduct' and not layer.inner_product_param.num_output and len(self.get_labels(True)) == 1:
-                    layer.inner_product_param.num_output = len(self.get_labels(True)[0])
+                    #print len(self.get_labels(True)), self.get_labels(True)
+                    layer.inner_product_param.num_output = self.get_labels(True).itervalues().next()['size']
+                    #layer.inner_product_param.num_output = len(self.get_labels(True)[0])
                 hidden_layers.layer.add().CopyFrom(layer)
                 if len(layer.bottom) == 1 and len(layer.top) == 1 and layer.bottom[0] == layer.top[0]:
                     pass
@@ -250,17 +252,18 @@ class CaffeTrainTask(TrainTask):
                     label_layer["val"][i].include.add(phase = caffe_pb2.TEST)
                     label_layer["val"][i].data_param.batch_size = constants.DEFAULT_BATCH_SIZE
 
+
         train_data_layer.data_param.source = self.dataset.path(self.dataset.train_db_task().db_name + "/data_lmdb/")
         train_data_layer.data_param.backend = caffe_pb2.DataParameter.LMDB
         for i, lab in enumerate(self.get_labels(True)):
-            label_layer["train"][i].data_param.source = self.dataset.path(self.dataset.train_db_task().db_name + "/labels_{}_lmdb/".format(i))
+            label_layer["train"][i].data_param.source = self.dataset.path(".")[:-1] + "labels_train_{idx}/data_lmdb/".format(idx=i)
             label_layer["train"][i].data_param.backend = caffe_pb2.DataParameter.LMDB
         if val_data_layer is not None and has_val_set:
             val_data_layer.data_param.source = self.dataset.path(self.dataset.val_db_task().db_name + "/data_lmdb/")
             val_data_layer.data_param.backend = caffe_pb2.DataParameter.LMDB
 
             for i, lab in enumerate(self.get_labels(True)):
-                label_layer["val"][i].data_param.source = self.dataset.path(self.dataset.val_db_task().db_name + "/labels_{}_lmdb/".format(i))
+                label_layer["val"][i].data_param.source = self.dataset.path(".")[:-1] + "labels_val_{idx}/data_lmdb/".format(idx=i)
                 label_layer["val"][i].data_param.backend = caffe_pb2.DataParameter.LMDB
 
         if self.use_mean:
@@ -982,13 +985,13 @@ class CaffeTrainTask(TrainTask):
         predictions = {}
 
         for line in net.outputs:
-            labels = self.get_labels(True)[0]#[idx]
+            #labels = self.get_labels(True)[0]#[idx]
             predictions[line] = []
             scores = output[line].flatten()
             indices = (-scores).argsort()
             for i in indices:
-                predictions[line].append([labels[i], np.float64(scores[i])])
-
+                #predictions[line].append([labels[i], np.float64(scores[i])])
+                predictions[line].append(["toto", np.float64(scores[i])])
         # add visualizations
         visualizations = []
         if layers and layers != 'none':

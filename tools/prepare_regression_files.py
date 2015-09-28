@@ -43,6 +43,7 @@ def process_image(input, output, image_height, image_width, resize_mode, encodin
             os.makedirs(tmp)
     finally:
         lock.release()
+    print input, output
     img.save(output, encoding)
 
 def preprocess_files(output_file, input_file, resize_mode, mean_file, image_width, image_height, encoding = "jpeg"):
@@ -65,7 +66,8 @@ def preprocess_files(output_file, input_file, resize_mode, mean_file, image_widt
             if not os.access(line.replace('\n', ''), os.R_OK):
                logger.error("Can't open file:{}".format(line))
                sys.exit(-1)
-            params = [line.replace('\n', ''), output_list[i - 1], image_height, image_width, resize_mode, encoding]
+
+            params = [line.replace('\n', ''), output_list[i], image_height, image_width, resize_mode, encoding]
             rq.append(pool.apply_async(process_image, params))
 
     pool.close()

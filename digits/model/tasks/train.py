@@ -401,16 +401,16 @@ class TrainTask(Task):
         # The labels might be set already
         # if hasattr(self, '_labels') and self._labels and len(self._labels) > 0:
         #     return self._labels
-
         assert hasattr(self.dataset, 'labels_file'), 'labels_file not set'
         assert self.dataset.labels_file, 'labels_file not set'
         assert os.path.exists(self.dataset.path(self.dataset.labels_file)), 'labels_file does not exist'
 
         labels = []
         if isRegression:
-            with open(self.dataset.path(self.dataset.labels_file)) as infile:
+            with open(self.dataset.labels_file) as infile:
                 content = json.loads(infile.read())
-                labels = content
+                print content
+                labels = content["labels"]
         else:
             with open(self.dataset.path(self.dataset.labels_file)) as infile:
                 for line in infile:

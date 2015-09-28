@@ -124,7 +124,6 @@ int main(int argc, char** argv) {
     int resize_width = std::max<int>(0, FLAGS_resize_width);
     int count = 0;
     for (const auto &line : lines) {
-      LOG(INFO) << line.first << " " << line.second[0];
       Datum datum;
       const int kMaxKeyLength = 256;
       char key_cstr[kMaxKeyLength];
@@ -146,7 +145,9 @@ int main(int argc, char** argv) {
       datum.set_width(resize_width);
       datum.set_height(resize_height);
       datum.set_label(0);
-      if (status == false) continue;
+      if (status == false) {
+        continue;
+      }
       if (check_size) {
         if (!data_size_initialized) {
          data_size = datum.channels() * datum.height() * datum.width();

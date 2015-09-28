@@ -40,8 +40,9 @@ def find_elements(describ_path):
         labels_type[label] = description_json["labels"][label]["type"]
 
     ret = {"labels" : {}, "data" : {}}
+    i = 0
     for dirname, dirnames, filenames in os.walk(path):
-        for i, filename in enumerate(filenames):
+        for filename in filenames:
             path = os.path.join(dirname, filename)
             if path.endswith(".json"):
                 with open(path, "r") as fd:
@@ -71,7 +72,7 @@ def find_elements(describ_path):
                                     ret["data"][key] += tmp
                                 else:
                                     ret["data"][key] = tmp
-
+                i += 1
     description_fd.close()
     return ret
 
@@ -87,6 +88,8 @@ def generate_file_output(input, isPreprocessFile = False):
         return "\n".join(["{}".format(value) for kind, idx, value in input])
 
 def generate_advanced_lmdb_data(job, form, elements):
+    job.labels_file = form.textfile_folderPath.data + "/dataset.json"
+
     number_images = len(elements["data"].itervalues().next())
     percent_val = int(form.percent_val.data)
     percent_test = int(form.percent_test.data)
@@ -99,7 +102,6 @@ def generate_advanced_lmdb_data(job, form, elements):
         content = elements["data"][key]
         old_content = content
         if content[0][0] == "data": #do it also for labels?
-
             with open(os.path.join(tmp_path, "files_{}.txt".format(i)), "w") as fd: #base input
                 fd.write(generate_file_output(content, True)) #LIST OF TMP FILE
                 generated_files["prepare"].append(os.path.join(tmp_path, "files_{}.txt".format(i)))
@@ -191,20 +193,20 @@ def generate_advanced_lmdb_data(job, form, elements):
                         resize_mode = job.resize_mode,
                         encoding    = form.encoding.data,
                         mean_file   = os.path.join(job.dir(), utils.constants.MEAN_FILE_CAFFE),
-                        labels_file = os.path.join(job.dir(), utils.constants.LABELS_FILE),
+                        labels_file = form.textfile_folderPath.data + "/dataset.json",
                         shuffle     = False, #HACK shuffle,
                         parents      = prepare_task
                         )
                     )
                     job.tasks.append(create_db_task[-1])
 
-    job.tasks.append(
-        tasks.ClearFiles(
-            job_dir = job.dir(),
-            tmp_folder = tmp_path,
-            parents = create_db_task
-            )
-        )
+    # job.tasks.append(
+    #     tasks.ClearFiles(
+    #         job_dir = job.dir(),
+    #         tmp_folder = tmp_path,
+    #         parents = create_db_task
+    #         )
+    #     )
 
 
 def generic(job, form, files, labels):
