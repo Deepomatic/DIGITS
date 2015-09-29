@@ -203,13 +203,13 @@ def generate_advanced_lmdb_data(job, form, elements):
                     )
                     job.tasks.append(create_db_task[-1])
 
-    # job.tasks.append(
-    #     tasks.ClearFiles(
-    #         job_dir = job.dir(),
-    #         tmp_folder = tmp_path,
-    #         parents = create_db_task
-    #         )
-    #     )
+    job.tasks.append(
+        tasks.ClearFiles(
+            job_dir = job.dir(),
+            tmp_folder = tmp_path,
+            parents = create_db_task
+            )
+        )
 
 
 def generic(job, form, files, labels):

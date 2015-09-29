@@ -146,6 +146,7 @@ int main(int argc, char** argv) {
       datum.set_height(resize_height);
       datum.set_label(0);
       if (status == false) {
+        LOG(FATAL) << "Can't find" << line.second[0];
         continue;
       }
       if (check_size) {
@@ -164,7 +165,7 @@ int main(int argc, char** argv) {
       string out;
       CHECK(datum.SerializeToString(&out));
       txn->Put(string(key_cstr, length), out);
-      LOG(INFO) << "Processed " << count << "/" << lines.size();
+    //  LOG(INFO) << "Processed " << count << "/" << lines.size();
 
       if (count++ % 1000 == 0) {
       txn->Commit();

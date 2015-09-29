@@ -32,6 +32,7 @@ logger = logging.getLogger('digits.tools.prepare_regression_files')
 
 def process_image(input, output, image_height, image_width, resize_mode, encoding):
     global mean, mean_count, flag, lock
+
     img = PIL.Image.open(input)
     img.resize((int(image_height), int(image_width)))
     tmp = "/".join(output.split('/')[:-1])
@@ -41,9 +42,11 @@ def process_image(input, output, image_height, image_width, resize_mode, encodin
         mean_count += 1
         if not os.path.exists(tmp):
             os.makedirs(tmp)
+        img.save(output, encoding)
+    except:
+        print "prob avec", input, output
     finally:
         lock.release()
-    img.save(output, encoding)
 
 def preprocess_files(output_file, input_file, resize_mode, mean_file, image_width, image_height, encoding = "jpeg"):
     global mean, mean_count, flag
@@ -54,12 +57,10 @@ def preprocess_files(output_file, input_file, resize_mode, mean_file, image_widt
         for i, line in enumerate(fd):
             output_list.append(line.split(" ")[0].replace('\n', ''))
 
-    pool = ThreadPool(15)
+    pool = ThreadPool(1)
     rq = []
     with open(input_file, "r") as fd:
         for i, line in enumerate(fd):
-            if i == 0:
-                continue
             line = line.split(" ")[0]
             if not os.access(line.replace('\n', ''), os.R_OK):
                logger.error("Can't open file:{}".format(line))
@@ -70,7 +71,6 @@ def preprocess_files(output_file, input_file, resize_mode, mean_file, image_widt
 
     pool.close()
     pool.join()
-
     logger.debug("Processing images")
 
     if mean is not None:
