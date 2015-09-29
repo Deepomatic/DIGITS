@@ -984,6 +984,7 @@ class CaffeTrainTask(TrainTask):
         indices = (-scores).argsort()
         predictions = {}
 
+        labels = list(self.get_labels(True))
         for line in net.outputs:
             #labels = self.get_labels(True)[0]#[idx]
             predictions[line] = []
@@ -991,7 +992,7 @@ class CaffeTrainTask(TrainTask):
             indices = (-scores).argsort()
             for i in indices:
                 #predictions[line].append([labels[i], np.float64(scores[i])])
-                predictions[line].append(["toto", np.float64(scores[i])])
+                predictions[line].append([labels[i], np.float64(scores[i])])
         # add visualizations
         visualizations = []
         if layers and layers != 'none':

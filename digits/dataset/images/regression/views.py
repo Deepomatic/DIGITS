@@ -180,7 +180,6 @@ def generate_advanced_lmdb_data(job, form, elements):
                 prepare_task
             )
 
-
     create_db_task = []
     for type in ("data", "labels"):
         for task_type in ("train", "val", "test"):

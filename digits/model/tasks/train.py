@@ -409,7 +409,6 @@ class TrainTask(Task):
         if isRegression:
             with open(self.dataset.labels_file) as infile:
                 content = json.loads(infile.read())
-                print content
                 labels = content["labels"]
         else:
             with open(self.dataset.path(self.dataset.labels_file)) as infile:
