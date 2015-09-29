@@ -985,14 +985,13 @@ class CaffeTrainTask(TrainTask):
         predictions = {}
 
         labels = list(self.get_labels(True))
-        for line in net.outputs:
+        for idx, line in enumerate(net.outputs):
             #labels = self.get_labels(True)[0]#[idx]
             predictions[line] = []
             scores = output[line].flatten()
             indices = (-scores).argsort()
             for i in indices:
-                #predictions[line].append([labels[i], np.float64(scores[i])])
-                predictions[line].append([labels[i], np.float64(scores[i])])
+                predictions[line].append([self.get_labels(True)[labels[idx]]["text"][i], np.float64(scores[i])])
         # add visualizations
         visualizations = []
         if layers and layers != 'none':

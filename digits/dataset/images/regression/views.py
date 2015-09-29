@@ -59,7 +59,7 @@ def find_elements(describ_path, shuffle = False):
                                 tmp = [("data", i, imgPath)]
                                 flag = True
                         elif key in labels_type:
-                            if labels_type[key] == "vector":
+                            if labels_type[key] == "vector" or labels_type[key] == "box":
                                 tmp = [("float_data", i, content[key])]
                             flag = True
 
