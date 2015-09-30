@@ -4,6 +4,7 @@ import os
 import re
 import tempfile
 import random
+import json
 
 import werkzeug.exceptions
 import numpy as np
@@ -269,6 +270,31 @@ def image_regression_model_classify_one():
     if request_wants_json():
         return flask.jsonify({'predictions': predictions})
     else:
+        if type(job.train_task().dataset.train_db_task().get_labels()) is not dict:
+            with open(job.train_task().dataset.train_db_task().labels_file) as fd:
+                job.train_task().dataset.train_db_task()._labels = json.loads(fd.read())["labels"]
+
+        labels = job.train_task().dataset.train_db_task().get_labels()
+        labels_key = list(job.train_task().dataset.train_db_task().get_labels())
+        for i, key in enumerate(predictions):
+            tmp = {}
+            if labels[labels_key[i]]["type"] == "box":
+                for boxes in predictions[key]:
+                    tmp[boxes[0]] = boxes[1]
+                    print boxes[0] , boxes[1]
+                width, height = int(image.shape[0]), int(image.shape[1])
+                xmin = (tmp["xmin"]*int(width)).astype(np.int64)
+                xmax = (tmp["xmax"]*int(width)).astype(np.int64)
+                ymin = ((tmp["ymin"])*int(height)).astype(np.int64)
+                ymax = ((tmp["ymax"]) *int(height)).astype(np.int64)
+                for i in range(xmin, xmax):
+                    image[ymin][i] = (0,255,0)
+                    image[ymax][i] = (0,255,0)
+                for i in range(ymin, ymax):
+                    image[i][xmin] = (0,255,0)
+                    image[i][xmax] = (0,255,0)
+                print xmin, xmax, ymin, ymax
+
         return flask.render_template('models/images/regression/classify_one.html',
                 image_src       = utils.image.embed_image_html(image),
                 predictions     = predictions,
