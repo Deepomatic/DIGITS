@@ -5,6 +5,7 @@ import re
 import time
 import math
 import subprocess
+import json
 
 import numpy as np
 from google.protobuf import text_format
@@ -188,7 +189,7 @@ class CaffeTrainTask(TrainTask):
         ### Write train_val file
 
         train_val_network = caffe_pb2.NetParameter()
-        label_layer = {"train": [], "val" : []}
+        label_layer = {"train": [], "val": []}
         # data layers
 
         max_crop_size = min(self.dataset.image_dims[0], self.dataset.image_dims[1])
@@ -218,80 +219,96 @@ class CaffeTrainTask(TrainTask):
                 train_val_network.layer.add().CopyFrom(val_data_layer)
                 val_data_layer = train_val_network.layer[-1]
         else:
-            train_data_layer = train_val_network.layer.add(type = 'Data', name = 'data')
-            train_data_layer.top.append('data')
-            train_data_layer.include.add(phase = caffe_pb2.TRAIN)
-            train_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+            with open(self.dataset.labels_file, 'r') as fd:
+                desc = json.loads(fd.read())
+            for name in desc["data"]:
+                #name = "data_train_" + name
+                train_data_layer = train_val_network.layer.add(type = 'Data', name = name)
+                train_data_layer.top.append(name)
+                train_data_layer.include.add(phase = caffe_pb2.TRAIN)
+                train_data_layer.data_param.source = self.dataset.path("./data_train_") + name + "/data_lmdb/"
+                train_data_layer.data_param.backend = caffe_pb2.DataParameter.LMDB
+                train_data_layer.data_param.batch_size = self.batch_size if self.batch_size else constants.DEFAULT_BATCH_SIZE
             if self.crop_size:
                 assert self.crop_size <= max_crop_size, 'crop_size is larger than the image size'
                 train_data_layer.transform_param.crop_size = self.crop_size
 
-            for i, lab in enumerate(self.get_labels(True)):
-                label_layer["train"].append(train_val_network.layer.add(type = 'Data', name = 'label' + str(i)))
-                label_layer["train"][i].top.append('label' + str(i))
-                label_layer["train"][i].include.add(phase = caffe_pb2.TRAIN)
-                label_layer["train"][i].data_param.batch_size = constants.DEFAULT_BATCH_SIZE
-
-
+            for name in desc["labels"]:
+                #name = "labels_train_" + name
+                label_layer["train"].append(train_val_network.layer.add(type = 'Data', name = name))
+                label_layer["train"][-1].top.append(name)
+                label_layer["train"][-1].include.add(phase = caffe_pb2.TRAIN)
+                label_layer["train"][-1].data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+                label_layer["train"][-1].data_param.source = self.dataset.path("./labels_train_") + name + "/data_lmdb/"
+                label_layer["train"][-1].data_param.backend = caffe_pb2.DataParameter.LMDB
+                label_layer["train"][-1].data_param.batch_size = self.batch_size if self.batch_size else constants.DEFAULT_BATCH_SIZE
             # #HACK
             # if self.crop_size:
             #     label_train_data_layer.transform_param.crop_size = self.crop_size
 
             if has_val_set:
-                val_data_layer = train_val_network.layer.add(type = 'Data', name = 'data')
-                val_data_layer.top.append('data')
-                val_data_layer.include.add(phase = caffe_pb2.TEST)
-                val_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+                for name in desc["data"]:
+                    #name = "data_val_" + name
+                    val_data_layer = train_val_network.layer.add(type = 'Data', name = name)
+                    val_data_layer.top.append(name)
+                    val_data_layer.include.add(phase = caffe_pb2.TEST)
+                    val_data_layer.data_param.batch_size = self.batch_size if self.batch_size else constants.DEFAULT_BATCH_SIZE
                 if self.crop_size:
                     assert self.crop_size <= max_crop_size, 'crop_size is larger than the image size'
                     val_data_layer.transform_param.crop_size = self.crop_size
 
-                for i, lab in enumerate(self.get_labels(True)):
-                    label_layer["val"].append(train_val_network.layer.add(type = 'Data', name = 'label' + str(i)))
-                    label_layer["val"][i].top.append('label' + str(i))
-                    label_layer["val"][i].include.add(phase = caffe_pb2.TEST)
-                    label_layer["val"][i].data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+                for name in desc["labels"]:
+                    #name = "labels_val_" + name
+                    label_layer["val"].append(train_val_network.layer.add(type = 'Data', name = name))
+                    print label_layer
+                    label_layer["val"][-1].top.append(name)
+                    label_layer["val"][-1].include.add(phase = caffe_pb2.TEST)
+
+                    label_layer["val"][-1].data_param.batch_size = self.batch_size if self.batch_size else constants.DEFAULT_BATCH_SIZE
+
+        # train_data_layer.data_param.source = self.dataset.path(self.dataset.train_db_task().db_name + "/data_lmdb/")
+        # train_data_layer.data_param.backend = caffe_pb2.DataParameter.LMDB
+        # for i, lab in enumerate(self.get_labels(True)):
+        #     label_layer["train"][i].data_param.source = self.dataset.path(".")[:-1] + "labels_train_{idx}/data_lmdb/".format(idx=i)
+        #     label_layer["train"][i].data_param.backend = caffe_pb2.DataParameter.LMDB
+        #
+        # if val_data_layer is not None and has_val_set:
+        #     val_data_layer.data_param.source = self.dataset.path(self.dataset.val_db_task().db_name + "/data_lmdb/")
+        #     val_data_layer.data_param.backend = caffe_pb2.DataParameter.LMDB
+        #
+        #     for i, lab in enumerate(self.get_labels(True)):
+        #         label_layer["val"][i].data_param.source = self.dataset.path(".")[:-1] + "labels_val_{idx}/data_lmdb/".format(idx=i)
+        #         label_layer["val"][i].data_param.backend = caffe_pb2.DataParameter.LMDB
 
 
-        train_data_layer.data_param.source = self.dataset.path(self.dataset.train_db_task().db_name + "/data_lmdb/")
-        train_data_layer.data_param.backend = caffe_pb2.DataParameter.LMDB
-        for i, lab in enumerate(self.get_labels(True)):
-            label_layer["train"][i].data_param.source = self.dataset.path(".")[:-1] + "labels_train_{idx}/data_lmdb/".format(idx=i)
-            label_layer["train"][i].data_param.backend = caffe_pb2.DataParameter.LMDB
-        if val_data_layer is not None and has_val_set:
-            val_data_layer.data_param.source = self.dataset.path(self.dataset.val_db_task().db_name + "/data_lmdb/")
-            val_data_layer.data_param.backend = caffe_pb2.DataParameter.LMDB
-
-            for i, lab in enumerate(self.get_labels(True)):
-                label_layer["val"][i].data_param.source = self.dataset.path(".")[:-1] + "labels_val_{idx}/data_lmdb/".format(idx=i)
-                label_layer["val"][i].data_param.backend = caffe_pb2.DataParameter.LMDB
-
+        # TODO CHECK THIS PART!!
         if self.use_mean:
             train_data_layer.transform_param.mean_file = self.dataset.path(".") + "/mean.binaryproto"
             if val_data_layer is not None and has_val_set:
                 val_data_layer.transform_param.mean_file = self.dataset.path(".") + "/mean.binaryproto"
-        if self.batch_size:
-            train_data_layer.data_param.batch_size = self.batch_size
-            for i, lab in enumerate(self.get_labels(True)):
-                label_layer["train"][i].data_param.batch_size = self.batch_size
 
-            #label_train_data_layer.data_param.batch_size = self.batch_size
-            if val_data_layer is not None and has_val_set:
-                val_data_layer.data_param.batch_size = self.batch_size
-                for i, lab in enumerate(self.get_labels(True)):
-                    label_layer["val"][i].data_param.batch_size = self.batch_size
-                #label_val_data_layer.data_param.batch_size = self.batch_size
-        else:
-            if not train_data_layer.data_param.HasField('batch_size'):
-                train_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
-                for i, lab in enumerate(self.get_labels(True)):
-                    label_layer["train"][i].data_param.batch_size = constants.DEFAULT_BATCH_SIZE
-                #label_train_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
-
-            if val_data_layer is not None and has_val_set and not val_data_layer.data_param.HasField('batch_size'):
-                val_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
-                for i, lab in enumerate(self.get_labels(True)):
-                    label_layer["val"][i].data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+        # if self.batch_size:
+        #     train_data_layer.data_param.batch_size = self.batch_size
+        #     for i, lab in enumerate(self.get_labels(True)):
+        #         label_layer["train"][i].data_param.batch_size = self.batch_size
+        #
+        #     #label_train_data_layer.data_param.batch_size = self.batch_size
+        #     if val_data_layer is not None and has_val_set:
+        #         val_data_layer.data_param.batch_size = self.batch_size
+        #         for i, lab in enumerate(self.get_labels(True)):
+        #             label_layer["val"][i].data_param.batch_size = self.batch_size
+        #         #label_val_data_layer.data_param.batch_size = self.batch_size
+        # else:
+        #     if not train_data_layer.data_param.HasField('batch_size'):
+        #         train_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+        #         for i, lab in enumerate(self.get_labels(True)):
+        #             label_layer["train"][i].data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+        #         #label_train_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+        #
+        #     if val_data_layer is not None and has_val_set and not val_data_layer.data_param.HasField('batch_size'):
+        #         val_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
+        #         for i, lab in enumerate(self.get_labels(True)):
+        #             label_layer["val"][i].data_param.batch_size = constants.DEFAULT_BATCH_SIZE
                 #label_val_data_layer.data_param.batch_size = constants.DEFAULT_BATCH_SIZE
 
         # hidden layers

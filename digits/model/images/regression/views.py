@@ -276,12 +276,12 @@ def image_regression_model_classify_one():
 
         labels = job.train_task().dataset.train_db_task().get_labels()
         labels_key = list(job.train_task().dataset.train_db_task().get_labels())
-        for i, key in enumerate(predictions):
+        for key in predictions:
             tmp = {}
-            if labels[labels_key[i]]["type"] == "box":
+            print labels, key, predictions
+            if labels[key]["type"] == "box":
                 for boxes in predictions[key]:
                     tmp[boxes[0]] = boxes[1]
-                    print boxes[0] , boxes[1]
                 width, height = int(image.shape[0]), int(image.shape[1])
                 xmin = (tmp["xmin"]*int(width)).astype(np.int64)
                 xmax = (tmp["xmax"]*int(width)).astype(np.int64)
@@ -293,7 +293,6 @@ def image_regression_model_classify_one():
                 for i in range(ymin, ymax):
                     image[i][xmin] = (0,255,0)
                     image[i][xmax] = (0,255,0)
-                print xmin, xmax, ymin, ymax
 
         return flask.render_template('models/images/regression/classify_one.html',
                 image_src       = utils.image.embed_image_html(image),

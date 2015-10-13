@@ -39,7 +39,7 @@ def find_elements(describ_path, shuffle = False):
         fields += [label]
         labels_type[label] = description_json["labels"][label]["type"]
 
-    ret = {"labels" : {}, "data" : {}}
+    ret = {"labels": {}, "data": {}}
     i = 0
 
     for dirname, dirnames, filenames in os.walk(path):
@@ -64,7 +64,7 @@ def find_elements(describ_path, shuffle = False):
                             flag = True
 
                         if flag and len(tmp):
-                            #REFACTOR
+                            #  REFACTOR
                             if description_json["labels"].has_key(key):
                                 if ret["labels"].has_key(key):
                                     ret["labels"][key] += tmp
@@ -79,16 +79,18 @@ def find_elements(describ_path, shuffle = False):
     description_fd.close()
     return ret
 
-def generate_file_output(input, isPreprocessFile = False):
+
+def generate_file_output(input, isPreprocessFile=False):
     if not isPreprocessFile:
         try:
             if type(input[0][2]) == list:
                 return "\n".join(["{} {} {}".format(kind, idx, " ".join([str(d) for d in value])) for kind, idx, value in input])
             return "\n".join(["{} {} {}".format(kind, idx, value) for kind, idx, value in input])
-        except IndexError: #Usually TEST
+        except IndexError:  # Usually TEST
             return ""
     else:
         return "\n".join(["{}".format(value) for kind, idx, value in input])
+
 
 def generate_advanced_lmdb_data(job, form, elements):
     job.labels_file = form.textfile_folderPath.data + "/dataset.json"
@@ -100,13 +102,17 @@ def generate_advanced_lmdb_data(job, form, elements):
     tmp_path = "/tmp/" + job.dir().split("/")[-1]
     os.mkdir(tmp_path)
 
-    generated_files = {"prepare" : [], "data": {"val":[], "train":[], "test":[]}, "labels": {"val":[], "train":[], "test":[]}}
+    generated_files = {"prepare": [], "data": {"val": [], "train": [], "test": []}, "labels": {"val": [], "train": [], "test": []}}
+    with open(job.labels_file, "r") as fd:
+        desc = json.loads(fd.read())
+
+
     for i, key in enumerate(elements["data"]):
         content = elements["data"][key]
         old_content = content
-        if content[0][0] == "data": #do it also for labels?
-            with open(os.path.join(tmp_path, "files_{}.txt".format(i)), "w") as fd: #base input
-                fd.write(generate_file_output(content, True)) #LIST OF TMP FILE
+        if content[0][0] == "data":  # do it also for labels?
+            with open(os.path.join(tmp_path, "files_{}.txt".format(i)), "w") as fd:  # base input
+                fd.write(generate_file_output(content, True))  # LIST OF TMP FILE
                 generated_files["prepare"].append(os.path.join(tmp_path, "files_{}.txt".format(i)))
 
             new_content = []
@@ -116,8 +122,8 @@ def generate_advanced_lmdb_data(job, form, elements):
                 new_content.append((line[0], line[1], " ".join(tmp)))
             content = new_content
 
-            with open(os.path.join(tmp_path, "files_{}.txt.tmp".format(i)), "w") as fd: #base input
-                fd.write(generate_file_output(content, True)) #LIST OF TMP FILE
+            with open(os.path.join(tmp_path, "files_{}.txt.tmp".format(i)), "w") as fd:  # base input
+                fd.write(generate_file_output(content, True))  # LIST OF TMP FILE
 
         val = old_content[:int(number_images * percent_val * 0.01)]
         test = old_content[len(val):len(val) + int(number_images * percent_test * 0.01)]
@@ -132,7 +138,7 @@ def generate_advanced_lmdb_data(job, form, elements):
         val = content[:int(number_images * percent_val * 0.01)]
         test = content[len(val):len(val) + int(number_images * percent_test * 0.01)]
         train = content[len(val) + len(test):]
-        #with tmp path
+        #  with tmp path
         with open(os.path.join(job.dir(), utils.constants.TRAIN_FILE + str(i) + ".tmp"), "w") as fd:
             fd.write(generate_file_output(train))
             generated_files["data"]["train"].append(os.path.join(job.dir(), utils.constants.TRAIN_FILE + str(i) + ".tmp"))
@@ -189,7 +195,7 @@ def generate_advanced_lmdb_data(job, form, elements):
                     tasks.CreateDbTaskRegression(
                         job_dir     = job.dir(),
                         input_file  = file,
-                        db_name     = "{}_{}_{}".format(type, task_type, i),
+                        db_name     = "{}_{}_{}".format(type, task_type, desc[type].keys()[i]),
                         image_dims  = job.image_dims,
                         image_folder= image_folder,
                         resize_mode = job.resize_mode,
