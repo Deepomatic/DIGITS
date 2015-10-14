@@ -234,9 +234,9 @@ class CaffeTrainTask(TrainTask):
                 train_data_layer.transform_param.crop_size = self.crop_size
 
             for name in desc["labels"]:
-                #name = "labels_train_" + name
-                label_layer["train"].append(train_val_network.layer.add(type = 'Data', name = name))
-                label_layer["train"][-1].top.append(name)
+                layer_name = "label_" + name
+                label_layer["train"].append(train_val_network.layer.add(type = 'Data', name = layer_name))
+                label_layer["train"][-1].top.append(layer_name)
                 label_layer["train"][-1].include.add(phase = caffe_pb2.TRAIN)
                 label_layer["train"][-1].data_param.batch_size = constants.DEFAULT_BATCH_SIZE
                 label_layer["train"][-1].data_param.source = self.dataset.path("./labels_train_") + name + "/data_lmdb/"
@@ -248,24 +248,24 @@ class CaffeTrainTask(TrainTask):
 
             if has_val_set:
                 for name in desc["data"]:
-                    #name = "data_val_" + name
                     val_data_layer = train_val_network.layer.add(type = 'Data', name = name)
                     val_data_layer.top.append(name)
                     val_data_layer.include.add(phase = caffe_pb2.TEST)
+                    val_data_layer.data_param.source = self.dataset.path("./data_val_") + name + "/data_lmdb/"
                     val_data_layer.data_param.batch_size = self.batch_size if self.batch_size else constants.DEFAULT_BATCH_SIZE
+                    val_data_layer.data_param.backend = caffe_pb2.DataParameter.LMDB
                 if self.crop_size:
                     assert self.crop_size <= max_crop_size, 'crop_size is larger than the image size'
                     val_data_layer.transform_param.crop_size = self.crop_size
 
                 for name in desc["labels"]:
-                    #name = "labels_val_" + name
-                    label_layer["val"].append(train_val_network.layer.add(type = 'Data', name = name))
-                    print label_layer
-                    label_layer["val"][-1].top.append(name)
+                    layer_name = "label_" + name
+                    label_layer["val"].append(train_val_network.layer.add(type = 'Data', name = layer_name))
+                    label_layer["val"][-1].top.append(layer_name)
                     label_layer["val"][-1].include.add(phase = caffe_pb2.TEST)
-
+                    label_layer["val"][-1].data_param.source = self.dataset.path("./labels_val_") + name + "/data_lmdb/"
                     label_layer["val"][-1].data_param.batch_size = self.batch_size if self.batch_size else constants.DEFAULT_BATCH_SIZE
-
+                    label_layer["val"][-1].data_param.backend = caffe_pb2.DataParameter.LMDB
         # train_data_layer.data_param.source = self.dataset.path(self.dataset.train_db_task().db_name + "/data_lmdb/")
         # train_data_layer.data_param.backend = caffe_pb2.DataParameter.LMDB
         # for i, lab in enumerate(self.get_labels(True)):
@@ -326,15 +326,16 @@ class CaffeTrainTask(TrainTask):
         deploy_network = caffe_pb2.NetParameter()
 
         # input
-        deploy_network.input.append('data')
-        deploy_network.input_dim.append(1)
-        deploy_network.input_dim.append(self.dataset.image_dims[2])
-        if self.crop_size:
-            deploy_network.input_dim.append(self.crop_size)
-            deploy_network.input_dim.append(self.crop_size)
-        else:
-            deploy_network.input_dim.append(self.dataset.image_dims[0])
-            deploy_network.input_dim.append(self.dataset.image_dims[1])
+        for name in desc["data"]:
+            deploy_network.input.append(name)  # TODO check if data is for instance text
+            deploy_network.input_dim.append(1)
+            deploy_network.input_dim.append(self.dataset.image_dims[2])
+            if self.crop_size:
+                deploy_network.input_dim.append(self.crop_size)
+                deploy_network.input_dim.append(self.crop_size)
+            else:
+                deploy_network.input_dim.append(self.dataset.image_dims[0])
+                deploy_network.input_dim.append(self.dataset.image_dims[1])
 
         # hidden layers
         for i, layer in enumerate(hidden_layers.layer):
@@ -982,7 +983,6 @@ class CaffeTrainTask(TrainTask):
         """
         labels = self.get_labels()
         net = self.get_net(snapshot_epoch)
-
         # process image
         if image.ndim == 2:
             image = image[:,:,np.newaxis]
@@ -991,11 +991,15 @@ class CaffeTrainTask(TrainTask):
 
         # reshape net input (if necessary)
         test_shape = (1,) + preprocessed.shape
-        if net.blobs['data'].data.shape != test_shape:
-            net.blobs['data'].reshape(*test_shape)
+        # TODO enorme hack, since we may have multiple data in input, maybe check in dataset.json
+        # _data = net.blobs["data"]
+        _data = net.blobs.itervalues().next()
+
+        if _data.data.shape != test_shape:
+            _data.reshape(*test_shape)
 
         # run inference
-        net.blobs['data'].data[...] = preprocessed
+        # _data.data[...] = preprocessed
         output = net.forward()
         scores = output[net.outputs[-1]].flatten()
         indices = (-scores).argsort()

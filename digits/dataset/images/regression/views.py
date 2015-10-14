@@ -52,20 +52,26 @@ def find_elements(describ_path, shuffle = False):
                     content = json.loads(fd.read())
                     for key in content.keys():
                         flag = False
+                        isLabel = False
                         tmp = []
-                        if key == "img_target":
-                            imgPath = os.path.join(dirname, content["img_target"])
-                            if os.path.exists(imgPath) and os.path.isfile(imgPath):
-                                tmp = [("data", i, imgPath)]
-                                flag = True
-                        elif key in labels_type:
+                        if key in labels_type:
                             if labels_type[key] == "vector" or labels_type[key] == "box":
                                 tmp = [("float_data", i, content[key])]
                             flag = True
+                            isLabel = True
+                            # TODO label classif
+                        else:
+                            try:
+                                imgPath = os.path.join(dirname, content[key])
+                                if os.path.exists(imgPath) and os.path.isfile(imgPath):
+                                    tmp = [("data", i, imgPath)]
+                                    flag = True
+                            except AttributeError:
+                                pass #dataset.json
 
                         if flag and len(tmp):
-                            #  REFACTOR
-                            if description_json["labels"].has_key(key):
+                            #  TODO REFACTOR
+                            if description_json["labels"].has_key(key) and isLabel is True:
                                 if ret["labels"].has_key(key):
                                     ret["labels"][key] += tmp
                                 else:
