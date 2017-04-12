@@ -39,6 +39,29 @@ CAFFE_SNAPSHOT_PREFIX = 'snapshot'
 CAFFE_DEPLOY_FILE = 'deploy.prototxt'
 CAFFE_PYTHON_LAYER_FILE = 'digits_python_layers.py'
 
+class persistent_net(object) :
+    
+    def __init__(self) :
+        self.net = None
+        self.model_id = None
+        self.epoch_number = None
+
+    def is_not_loaded(self) :
+        return (self.model_id is None)
+
+    def load_model(self, net, model_id, epoch_number) :
+        self.net = net
+        self.model_id = model_id
+        self.epoch_number = epoch_number
+
+    def is_same_net(self, model_id, epoch_number) :
+        return self.model_id == model_id and self.epoch_number == epoch_number
+
+    def get_net(self) :
+        return self.net
+
+global_persistent_net = persistent_net()
+
 @subclass
 class DigitsTransformer(caffe.io.Transformer):
     """
@@ -1259,7 +1282,12 @@ class CaffeTrainTask(TrainTask):
         snapshot_epoch -- which snapshot to use
         layers -- which layer activation[s] and weight[s] to visualize
         """
-        net = self.get_net(snapshot_epoch, gpu=gpu)
+
+        if global_persistent_net.is_same_net(self.job_id, snapshot_epoch) :
+            net = global_persistent_net.get_net()
+        else :
+            net = self.get_net(snapshot_epoch, gpu=gpu)
+            global_persistent_net.load_model(net,self.job_id,snapshot_epoch)
 
         # process image
         if image.ndim == 2:
@@ -1421,7 +1449,12 @@ class CaffeTrainTask(TrainTask):
         Keyword arguments:
         snapshot_epoch -- which snapshot to use
         """
-        net = self.get_net(snapshot_epoch, gpu=gpu)
+        
+        if global_persistent_net.is_same_net(self.job_id, snapshot_epoch) :
+            net = global_persistent_net.get_net()
+        else :
+            net = self.get_net(snapshot_epoch, gpu=gpu)
+            global_persistent_net.load_model(net,self.job_id,snapshot_epoch)
 
         caffe_images = []
         for image in images:
