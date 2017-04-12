@@ -1502,8 +1502,8 @@ class CaffeTrainTask(TrainTask):
 
         # Load the model
         self._caffe_net = caffe.Net(
-                self.path(self.deploy_file),
-                file_to_load,
+                str(self.path(self.deploy_file)),
+                str(file_to_load),
                 caffe.TEST)
 
         # Remove job_dir from PATH
