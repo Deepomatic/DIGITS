@@ -60,6 +60,8 @@ class persistent_net(object) :
     def get_net(self) :
         return self.net
 
+# Because of this ugly global object, this code can not be used concurrently,
+# No multi-threading can be used
 global_persistent_net = persistent_net()
 
 @subclass
