@@ -166,6 +166,15 @@ def infer(input_list,
             gpu=gpu,
             resize=resize)
 
+    json_return = {"labels" : model.train_task().get_labels(), "results" : []}
+    for index, path in enumerate(paths) :
+        if index in input_ids :
+            json_return["results"].append({path.strip() : outputs["softmax"][input_ids.index(index)]})
+        else :
+            json_return["results"].append({path.strip() : 'Could not load this query image'})
+
+    return json_return
+
     # write to hdf5 file
     db_path = os.path.join(output_dir, 'inference.hdf5')
     db = h5py.File(db_path, 'w')
