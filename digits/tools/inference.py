@@ -169,7 +169,8 @@ def infer(input_list,
     json_return = {"labels" : model.train_task().get_labels(), "results" : []}
     for index, path in enumerate(paths) :
         if index in input_ids :
-            json_return["results"].append({path.strip() : outputs["softmax"][input_ids.index(index)]})
+            return_dict = dict(zip(json_return["labels"], outputs["softmax"][input_ids.index(index)]))
+            json_return["results"].append({path.strip() : return_dict})
         else :
             json_return["results"].append({path.strip() : 'Could not load this query image'})
 
