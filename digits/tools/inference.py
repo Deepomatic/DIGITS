@@ -166,10 +166,28 @@ def infer(input_list,
             gpu=gpu,
             resize=resize)
 
-    json_return = {"labels" : model.train_task().get_labels(), "results" : []}
-    for index, path in enumerate(paths) :
-        if index in input_ids :
-            return_dict = dict(zip(json_return["labels"], outputs["softmax"][input_ids.index(index)]))
+    assert 'softmax' in outputs or 'sigmoid' in outputs, 'Only sigmoid or softmax is handled for inference'
+
+    labels = []
+    if 'softmax' in outputs:
+        labels = model.train_task().get_labels()
+        outputs_data = outputs['softmax']
+    else:
+        # In case of tagging training we do not have the label_file available in digits.
+        # This a hack to retrieve it
+        mean_path = model.train_task().dataset.__dict__['mean_file']
+        labels_file = os.path.join(os.path.dirname(mean_path), 'labels.txt')
+        with open(self.dataset.path(self.dataset.labels_file)) as infile:
+            for line in infile:
+                label = line.strip()
+                if label:
+                    labels.append(label)
+        outputs_data = outputs['sigmoid']
+
+    json_return = {"labels" : labels, "results" : []}
+    for index, path in enumerate(paths):
+        if index in input_ids:
+            return_dict = dict(zip(json_return["labels"], outputs_data[input_ids.index(index)]))
             json_return["results"].append({path.strip() : return_dict})
         else :
             json_return["results"].append({path.strip() : 'Could not load this query image'})
