@@ -177,7 +177,7 @@ def infer(input_list,
         # This a hack to retrieve it
         mean_path = model.train_task().dataset.__dict__['mean_file']
         labels_file = os.path.join(os.path.dirname(mean_path), 'labels.txt')
-        with open(self.dataset.path(self.dataset.labels_file)) as infile:
+        with open(labels_file) as infile:
             for line in infile:
                 label = line.strip()
                 if label:
