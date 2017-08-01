@@ -175,7 +175,7 @@ def infer(input_list,
     else:
         # In case of tagging training we do not have the label_file available in digits.
         # This a hack to retrieve it
-        mean_path = model.train_task().dataset.__dict__['mean_file']
+        mean_path = model.train_task().dataset.mean_file
         labels_file = os.path.join(os.path.dirname(mean_path), 'labels.txt')
         with open(labels_file) as infile:
             for line in infile:
